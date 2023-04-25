@@ -1,0 +1,22 @@
+{
+  "name": "tachyon-server-ts",
+  "version": "1.0.0",
+  "description": "Tachyon server written in TypeScript",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "author": "Jazcash",
+  "license": "ISC",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^18.16.1",
+    "jaz-ts-utils": "^6.2.2",
+    "typescript": "^5.0.4"
+  }
+}
