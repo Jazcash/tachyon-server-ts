@@ -2,18 +2,29 @@
     "compilerOptions": {
         "target": "ES2022",
         "module": "CommonJS",
-        "lib": ["dom", "es6", "ES2022", "esnext.asynciterable"],
+        "lib": ["dom", "es6", "ES2022"],
         "skipLibCheck": true,
         "sourceMap": true,
         "declaration": true,
-        "outDir": "./dist",
+        "outDir": "dist",
         "moduleResolution": "Node",
         "removeComments": true,
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "strict": true,
-        "baseUrl": "."
+        "baseUrl": ".",
+        "paths": {
+            "*": ["src/*"]
+        }
     },
-    "exclude": ["node_modules", "**/__tests__/*"],
-    "include": ["src/**/*"]
+    "exclude": ["node_modules", "tachyon"],
+    "include": ["src/**/*"],
+    "references": [
+        {
+            "path": "./tachyon"
+        }
+    ],
+    "ts-node": {
+        "swc": true
+    }
 }
