@@ -9,7 +9,7 @@
     "build": "npm run clean && tsc && tsc-alias",
     "start": "cross-env TS_NODE_BASEURL=./dist nodemon -r tsconfig-paths/register --enable-source-maps dist/index.js",
     "prepare": "ts-patch install -s",
-    "test": "jest",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "clean": "rimraf dist/"
   },
   "author": "Jazcash",

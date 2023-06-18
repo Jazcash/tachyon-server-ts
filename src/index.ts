@@ -1,12 +1,9 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
 import fs from "fs";
+import { Signal } from "jaz-ts-utils";
 import path, { dirname } from "path";
 import { replaceTscAliasPaths } from "tsc-alias";
 import { fileURLToPath, pathToFileURL } from "url";
-import { WebSocketServer } from "ws";
+import { ServerOptions, WebSocketServer } from "ws";
 
 import { Client } from "@/client.js";
 
@@ -30,16 +27,57 @@ for (const serviceHandlerDir of serviceHandlerDirs) {
     }
 }
 
-const clients: Client[] = [];
-const server = new WebSocketServer({ host: "localhost", port: 3005 });
+export type TachyonServerConfig = ServerOptions & {
+    //
+};
 
-console.log(`Server started on port ${server.options.port}!`);
+export class TachyonServer {
+    protected wss: WebSocketServer;
+    protected clients: Client[] = [];
+    protected isReady = false;
+    protected onReady = new Signal();
 
-server.addListener("connection", (socket) => {
-    const client = new Client(socket);
-    clients.push(client);
+    constructor(config: TachyonServerConfig) {
+        this.wss = new WebSocketServer(config);
 
-    socket.on("close", () => {
-        clients.splice(clients.indexOf(client), 1);
-    });
-});
+        this.wss.on("listening", () => {
+            this.isReady = true;
+            this.onReady.dispatch();
+
+            console.log(`Tachyon server started on port ${this.wss.options.port}!`);
+        });
+
+        this.wss.addListener("connection", (socket) => {
+            const client = new Client(socket);
+            this.clients.push(client);
+
+            socket.on("close", () => {
+                this.clients.splice(this.clients.indexOf(client), 1);
+            });
+        });
+    }
+
+    public ready() {
+        return new Promise<void>((resolve) => {
+            if (this.isReady) {
+                resolve();
+            } else {
+                this.onReady.addOnce(() => {
+                    resolve();
+                });
+            }
+        });
+    }
+
+    public destroy() {
+        return new Promise<void>((resolve, reject) => {
+            this.wss.close((err) => {
+                if (err) {
+                    reject();
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+}
