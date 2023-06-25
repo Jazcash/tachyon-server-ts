@@ -1,5 +1,5 @@
 import { Generated, Selectable } from "kysely";
-import { PrivateUserClient } from "tachyon/src/schema/types";
+import type { PrivateUserClient } from "tachyon";
 
 export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
     userId: Generated<number>;

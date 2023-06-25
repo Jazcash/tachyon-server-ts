@@ -1,5 +1,5 @@
-import type { RemoveField, ResponseEndpointId, ResponseType, ServiceId } from "tachyon/src/helpers.js";
-import type { Tachyon } from "tachyon/src/schema/index.js";
+import { RemoveField } from "jaz-ts-utils";
+import type { ResponseEndpointId, ResponseType, ServiceId } from "tachyon";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
@@ -68,7 +68,7 @@ export class Client {
         }
     }
 
-    protected sendResponse<S extends ServiceId<Tachyon>, E extends ResponseEndpointId<Tachyon, S>>(service: S, endpoint: E, data: RemoveField<ResponseType<Tachyon, S, E>, "command">): void {
+    protected sendResponse<S extends ServiceId, E extends ResponseEndpointId<S>>(service: S, endpoint: E, data: RemoveField<ResponseType<S, E>, "command">): void {
         const validator = validators.get(`${service}/${endpoint.toString()}/response`);
 
         if (!validator) {
@@ -81,7 +81,7 @@ export class Client {
         const response = {
             command: commandId,
             ...data,
-        } as ResponseType<Tachyon, S, E>;
+        } as ResponseType<S, E>;
 
         const isValid = validator(response);
         if (!isValid) {

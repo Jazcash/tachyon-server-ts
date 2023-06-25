@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-restricted-imports
-import { TachyonServer } from "../dist/index.js";
+import { TachyonServer } from "../dist/server.js";
 
 const server = new TachyonServer({
     host: "localhost",
