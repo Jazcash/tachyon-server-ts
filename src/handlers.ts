@@ -2,8 +2,8 @@ import { RemoveField } from "jaz-ts-utils";
 import { Kysely } from "kysely";
 import type { GetCommands, RequestEndpointId, ServiceId } from "tachyon";
 
-import { Client } from "@/client";
-import { DatabaseModel } from "@/model/database";
+import { Client } from "@/client.js";
+import { DatabaseModel } from "@/model/database.js";
 
 type HandlerArgs = {
     client: Client;

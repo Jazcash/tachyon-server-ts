@@ -13,7 +13,7 @@ module.exports = {
     rules: {
         // Rules should only be added here for testing temporarily and should eventually be moved into jaz-ts-utils to ensure consistency across projects
         "func-style": ["error", "declaration"],
-        // "import/extensions": ["error", "ignorePackages"],
+        "import/extensions": ["error", "ignorePackages"],
         // "node/file-extension-in-import": ["error", "always"],
     },
     settings: {

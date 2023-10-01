@@ -14,7 +14,7 @@ export const database = new Kysely<DatabaseModel>({
     plugins: [serializePlugin],
 });
 
-await serializePlugin.setSchema(database);
+await serializePlugin.setSchema(database as any);
 
 await database.schema
     .createTable("settings")
@@ -30,7 +30,7 @@ await database.schema
     .addColumn("email", "varchar", (col) => col.notNull().unique())
     .addColumn("username", "varchar", (col) => col.notNull().unique())
     .addColumn("hashedPassword", "varchar", (col) => col.notNull())
-    .addColumn("isBot", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("verified", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("clanId", "integer")
     .addColumn("icons", "json", (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
@@ -45,7 +45,11 @@ export async function getSignSecret() {
         return signSecret;
     }
 
-    const storedSecret = await database.selectFrom("settings").where("key", "=", "signSecret").select("value").executeTakeFirst();
+    const storedSecret = await database
+        .selectFrom("settings")
+        .where("key", "=", "signSecret")
+        .select("value")
+        .executeTakeFirst();
     if (storedSecret) {
         signSecret = String(storedSecret.value);
     } else {

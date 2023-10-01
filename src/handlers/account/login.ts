@@ -2,14 +2,23 @@ import jwt from "jsonwebtoken";
 
 import { database, getSignSecret } from "@/database.js";
 import { defineHandler } from "@/handlers.js";
+import { addUserClient } from "@/userClients.js";
 
-export default defineHandler("auth", "login", async (options, data) => {
+export default defineHandler("account", "login", async (options, data) => {
     try {
         const signSecret = await getSignSecret();
         const payload = jwt.verify(data.token, signSecret);
 
         if (typeof payload === "object" && "userId" in payload) {
-            const { hashedPassword, ...user } = await database.selectFrom("user").where("userId", "=", payload.userId).selectAll().executeTakeFirstOrThrow();
+            const user = await database
+                .selectFrom("user")
+                .where("userId", "=", payload.userId)
+                .selectAll()
+                .executeTakeFirstOrThrow();
+
+            options.client.user = user;
+
+            addUserClient(user);
 
             return {
                 status: "success",

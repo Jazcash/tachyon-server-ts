@@ -1,19 +1,17 @@
-// eslint-disable-next-line no-restricted-imports
+/* eslint-disable no-restricted-imports */
+import { startServer, stopServer } from "../dist/index.js";
 import { TachyonServer } from "../dist/server.js";
 
-const server = new TachyonServer({
-    host: "localhost",
-    port: 3010,
-});
+let server: TachyonServer;
 
 beforeAll(async () => {
-    await server.ready();
+    server = await startServer();
 });
 
 afterAll(async () => {
-    await server.destroy();
+    await stopServer();
 });
 
-test("thing", () => {
-    expect(true).toBe(true);
+test("system", () => {
+    test("version", async () => {});
 });

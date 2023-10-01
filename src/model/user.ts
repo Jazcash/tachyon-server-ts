@@ -6,6 +6,7 @@ export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
     hashedPassword: string;
     email: string;
     username: string;
+    verified: boolean;
 };
 
 export type User = Selectable<UserTable>;

@@ -17,6 +17,7 @@ const config: Config = {
         ],
     },
     extensionsToTreatAsEsm: [".ts"],
+    setupFilesAfterEnv: ["./jest-pre-config.ts"],
 };
 
 export default config;

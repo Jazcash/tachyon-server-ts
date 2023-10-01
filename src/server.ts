@@ -1,11 +1,9 @@
 import { Signal } from "jaz-ts-utils";
-import { ServerOptions, WebSocketServer } from "ws";
+import { WebSocketServer } from "ws";
 
 import { Client } from "@/client.js";
-
-export type TachyonServerConfig = ServerOptions & {
-    //
-};
+import { config } from "@/config.js";
+import { fastify } from "@/http.js";
 
 export class TachyonServer {
     protected wss: WebSocketServer;
@@ -13,18 +11,20 @@ export class TachyonServer {
     protected isReady = false;
     protected onReady = new Signal();
 
-    constructor(config: TachyonServerConfig) {
-        this.wss = new WebSocketServer(config);
+    constructor() {
+        this.wss = new WebSocketServer({
+            server: fastify.server,
+        });
 
         this.wss.on("listening", () => {
             this.isReady = true;
             this.onReady.dispatch();
 
-            console.log(`Tachyon server started on port ${this.wss.options.port}!`);
+            console.log(`Tachyon WebSocket Server listening on port ${config.port}!`);
         });
 
-        this.wss.addListener("connection", (socket) => {
-            const client = new Client(socket);
+        this.wss.addListener("connection", (socket, request) => {
+            const client = new Client(socket, request.socket);
             this.clients.push(client);
 
             socket.on("close", () => {

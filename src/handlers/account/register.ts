@@ -1,18 +1,12 @@
 import { hash } from "bcrypt";
 
+import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { defineHandler } from "@/handlers.js";
 
-export default defineHandler("auth", "register", async (options, data) => {
+export default defineHandler("account", "register", async (options, data) => {
     try {
-        if (data.password.length < 6) {
-            return {
-                status: "failed",
-                reason: "weak_password",
-            };
-        }
-
-        const hashedPassword = await hash(data.password, 10);
+        const hashedPassword = await hash(data.hashedPassword, 10); // second hash
 
         await database
             .insertInto("user")
@@ -20,14 +14,16 @@ export default defineHandler("auth", "register", async (options, data) => {
                 email: data.email,
                 username: data.username,
                 hashedPassword,
+                verified: !config.accountVerification,
                 roles: [],
-                isBot: false,
                 icons: {},
                 friends: [],
                 friendRequests: [],
                 ignores: [],
             })
             .executeTakeFirstOrThrow();
+
+        // TODO: send verification email
 
         return {
             status: "success",
