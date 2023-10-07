@@ -1,11 +1,17 @@
 /* eslint-disable no-restricted-imports */
-import { startServer, stopServer } from "../dist/index.js";
-import { TachyonServer } from "../dist/server.js";
+import { TachyonClient } from "tachyon-client";
+
+import { startServer, stopServer } from "../src/index.js";
+import { TachyonServer } from "../src/server.js";
 
 let server: TachyonServer;
+let client: TachyonClient;
 
 beforeAll(async () => {
-    server = await startServer();
+    server = await startServer({ port: 3455 });
+    client = new TachyonClient("127.0.0.1:3455");
+
+    // await client.waitFor("");
 });
 
 afterAll(async () => {

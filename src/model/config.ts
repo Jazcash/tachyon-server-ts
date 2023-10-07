@@ -1,8 +1,8 @@
 import { Static, Type } from "@sinclair/typebox";
 
 export const configSchema = Type.Object({
-    port: Type.Integer({ default: 3005 }),
-    accountVerification: Type.Boolean({ default: true }),
+    port: Type.Optional(Type.Integer({ default: 3005 })),
+    accountVerification: Type.Optional(Type.Boolean({ default: true })),
     mail: Type.Optional(
         Type.Object({
             host: Type.String(),
