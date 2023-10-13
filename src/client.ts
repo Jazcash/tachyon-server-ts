@@ -1,7 +1,7 @@
 import fs from "fs";
 import { RemoveField } from "jaz-ts-utils";
 import { Socket } from "net";
-import type { ResponseEndpointId, ResponseType, ServiceId, SystemVersionResponse } from "tachyon";
+import type { ResponseEndpointId, ResponseType, ServiceId, SystemVersionResponse } from "tachyon-protocol";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
@@ -11,7 +11,7 @@ import { validators } from "@/validators.js";
 
 type SuccessfulSystemVersionResponse = SystemVersionResponse & { status: "success" };
 
-const tachyonPackageStr = fs.readFileSync("tachyon/package.json", { encoding: "utf-8" });
+const tachyonPackageStr = fs.readFileSync("./node_modules/tachyon-protocol/package.json", { encoding: "utf-8" });
 const tachyonPackageJson = JSON.parse(tachyonPackageStr);
 const tachyonVersion = tachyonPackageJson.version;
 

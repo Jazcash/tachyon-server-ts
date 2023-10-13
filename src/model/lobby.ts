@@ -1,4 +1,4 @@
-import { Lobby as LobbySchema } from "tachyon/dist";
+import { Lobby as LobbySchema } from "tachyon-protocol";
 
 import { Battle } from "@/model/battle.js";
 

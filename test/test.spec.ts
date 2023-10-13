@@ -19,5 +19,7 @@ afterAll(async () => {
 });
 
 test("system", () => {
-    test("version", async () => {});
+    test("version", async () => {
+        //
+    });
 });

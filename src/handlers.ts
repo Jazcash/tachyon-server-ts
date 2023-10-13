@@ -1,6 +1,6 @@
 import { RemoveField } from "jaz-ts-utils";
 import { Kysely } from "kysely";
-import type { GetCommands, RequestEndpointId, ServiceId } from "tachyon";
+import type { GetCommands, RequestEndpointId, ServiceId } from "tachyon-protocol";
 
 import { Client } from "@/client.js";
 import { DatabaseModel } from "@/model/database.js";

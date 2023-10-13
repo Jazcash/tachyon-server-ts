@@ -1,15 +1,12 @@
 import chalk from "chalk";
 import fs from "fs";
 import path, { dirname } from "path";
-import { replaceTscAliasPaths } from "tsc-alias";
 import { fileURLToPath, pathToFileURL } from "url";
 
 import { setConfig } from "@/config.js";
 import { startHttpServer, stopHttpServer } from "@/http.js";
 import { Config } from "@/model/config.js";
 import { TachyonServer } from "@/server.js";
-
-replaceTscAliasPaths();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,12 +30,14 @@ for (const serviceHandlerDir of serviceHandlerDirs) {
     }
 }
 
-const schemaDirs = await fs.promises.readdir("tachyon/dist", { withFileTypes: true });
+const schemaDirs = await fs.promises.readdir("./node_modules/tachyon-protocol/dist", { withFileTypes: true });
 const serviceDirs = schemaDirs.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
 for (const serviceDir of serviceDirs) {
-    const endpointDirs = await fs.promises.readdir(`tachyon/dist/${serviceDir}`);
+    const endpointDirs = await fs.promises.readdir(`./node_modules/tachyon-protocol/dist/${serviceDir}`);
     for (const endpointDir of endpointDirs) {
-        const hasRequestSchema = fs.existsSync(`tachyon/dist/${serviceDir}/${endpointDir}/request.json`);
+        const hasRequestSchema = fs.existsSync(
+            `./node_modules/tachyon-protocol/dist/${serviceDir}/${endpointDir}/request.json`
+        );
         if (
             hasRequestSchema &&
             (!registeredHandlers[serviceDir] || !registeredHandlers[serviceDir].includes(endpointDir))
