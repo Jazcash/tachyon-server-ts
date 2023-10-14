@@ -22,7 +22,7 @@ for (const serviceHandlerDir of serviceHandlerDirs) {
     });
     registeredHandlers[serviceHandlerDir] = [];
     for (const endpointHandler of endpointHandlers) {
-        if (endpointHandler.endsWith(".js")) {
+        if (endpointHandler.endsWith(".ts")) {
             const endpointHandlerPath = pathToFileURL(path.join(endpointDir, endpointHandler));
             await import(endpointHandlerPath.href);
             registeredHandlers[serviceHandlerDir].push(path.parse(endpointHandler).name);

@@ -24,7 +24,7 @@ export class TachyonServer {
         });
 
         this.wss.addListener("connection", (socket, request) => {
-            const client = new Client(socket, request.socket);
+            const client = new Client(socket, request);
             this.clients.push(client);
 
             socket.on("close", () => {
