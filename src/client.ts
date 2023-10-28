@@ -1,8 +1,8 @@
-import fs from "fs";
 import { IncomingMessage } from "http";
 import { RemoveField } from "jaz-ts-utils";
 import { Socket } from "net";
 import type { ResponseEndpointId, ResponseType, ServiceId, SystemVersionResponse } from "tachyon-protocol";
+import { tachyonMeta } from "tachyon-protocol";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
@@ -10,9 +10,7 @@ import { handlers } from "@/handlers.js";
 import { User } from "@/model/user.js";
 import { validators } from "@/validators.js";
 
-const tachyonPackageStr = fs.readFileSync("./node_modules/tachyon-protocol/package.json", { encoding: "utf-8" });
-const tachyonPackageJson = JSON.parse(tachyonPackageStr);
-const serverTachyonVersion = tachyonPackageJson.version;
+type SystemVersionResponseData = (SystemVersionResponse & { status: "success" })["data"];
 
 export class Client {
     public user?: User;
@@ -26,11 +24,11 @@ export class Client {
         const url = new URL(connectionMessage.url!, `http://${connectionMessage.headers.host}`);
         const clientTachyonVersion = url.searchParams.get("tachyonVersion");
 
-        if (clientTachyonVersion !== serverTachyonVersion) {
-            let versionParity: (SystemVersionResponse & { status: "success" })["data"]["versionParity"] = "unknown"; // TODO: make type helper for this sort of thing
+        if (clientTachyonVersion !== tachyonMeta.version) {
+            let versionParity: SystemVersionResponseData["versionParity"] = "unknown"; // TODO: make type helper for this sort of thing
             if (clientTachyonVersion) {
                 const [clientMajor, clientMinor, clientPatch] = clientTachyonVersion.split(".");
-                const [serverMajor, serverMinor, serverPatch] = serverTachyonVersion.split(".");
+                const [serverMajor, serverMinor, serverPatch] = tachyonMeta.version.split(".");
 
                 if (clientMajor !== serverMajor) {
                     versionParity = "major_mismatch";
@@ -44,7 +42,7 @@ export class Client {
             this.sendResponse("system", "version", {
                 status: "success",
                 data: {
-                    tachyonVersion: serverTachyonVersion,
+                    tachyonVersion: tachyonMeta.version as SystemVersionResponseData["tachyonVersion"],
                     versionParity,
                 },
             });
@@ -52,7 +50,7 @@ export class Client {
             this.sendResponse("system", "version", {
                 status: "success",
                 data: {
-                    tachyonVersion: serverTachyonVersion,
+                    tachyonVersion: tachyonMeta.version as SystemVersionResponseData["tachyonVersion"],
                     versionParity: "match",
                 },
             });
@@ -95,7 +93,7 @@ export class Client {
         const jsonStr = message.toString();
 
         try {
-            const request = JSON.parse(jsonStr) as { command: `${string}/${string}/request`; data?: object }; // TODO: parse this against an AJV validator
+            const request = JSON.parse(jsonStr) as { command: `${string}/${string}/request`; data?: object };
 
             const validator = validators.get(request.command);
 

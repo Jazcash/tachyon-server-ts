@@ -1,9 +1,11 @@
-import { compare } from "bcrypt";
+import * as bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { database, getSignSecret } from "@/database.js";
 import { defineHandler } from "@/handlers.js";
 import { User } from "@/model/user.js";
+
+const compare = bcryptjs.compare;
 
 export default defineHandler("account", "getToken", async (options, data) => {
     let user: User;

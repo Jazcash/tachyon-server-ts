@@ -1,4 +1,6 @@
+import chalk from "chalk";
 import { Signal } from "jaz-ts-utils";
+import { tachyonMeta } from "tachyon-protocol";
 import { WebSocketServer } from "ws";
 
 import { Client } from "@/client.js";
@@ -20,7 +22,9 @@ export class TachyonServer {
             this.isReady = true;
             this.onReady.dispatch();
 
-            console.log(`Tachyon WebSocket Server listening on port ${config.port}!`);
+            console.log(
+                chalk.green(`Tachyon ${tachyonMeta.version} WebSocket Server now listening on port ${config.port}`)
+            );
         });
 
         this.wss.addListener("connection", (socket, request) => {
