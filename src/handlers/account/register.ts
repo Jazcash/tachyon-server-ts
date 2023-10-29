@@ -1,10 +1,12 @@
-import * as bcryptjs from "bcryptjs";
+import bcryptjs from "bcryptjs";
 
 import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { defineHandler } from "@/handlers.js";
 
 const hash = bcryptjs.hash;
+
+console.log(hash);
 
 export default defineHandler("account", "register", async (options, data) => {
     try {

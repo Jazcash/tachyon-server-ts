@@ -1,4 +1,4 @@
-import * as bcryptjs from "bcryptjs";
+import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { database, getSignSecret } from "@/database.js";
