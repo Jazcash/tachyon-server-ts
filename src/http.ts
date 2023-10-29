@@ -13,8 +13,8 @@ fastify.get("/", async function handler(request, reply) {
 
 export async function startHttpServer() {
     try {
-        await fastify.listen({ port: config.port });
-        console.log(chalk.green(`Tachyon HTTP API listening on port ${config.port}`));
+        await fastify.listen({ port: config.httpPort });
+        console.log(chalk.green(`Tachyon HTTP API listening on port ${config.httpPort}`));
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);
