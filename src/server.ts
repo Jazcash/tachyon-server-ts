@@ -5,6 +5,7 @@ import { WebSocketServer } from "ws";
 
 import { Client } from "@/client.js";
 import { config } from "@/config.js";
+import { fastify } from "@/http.js";
 
 export class TachyonServer {
     protected wss: WebSocketServer;
@@ -14,7 +15,7 @@ export class TachyonServer {
 
     constructor() {
         this.wss = new WebSocketServer({
-            port: config.wssPort,
+            server: fastify.server,
         });
 
         this.wss.on("listening", () => {
@@ -22,7 +23,7 @@ export class TachyonServer {
             this.onReady.dispatch();
 
             console.log(
-                chalk.green(`Tachyon ${tachyonMeta.version} WebSocket Server now listening on port ${config.wssPort}`)
+                chalk.green(`Tachyon ${tachyonMeta.version} WebSocket Server now listening on port ${config.port}`)
             );
         });
 
