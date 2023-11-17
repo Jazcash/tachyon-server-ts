@@ -15,6 +15,8 @@
     "dist"
   ],
   "dependencies": {
+    "@fastify/express": "^2.3.0",
+    "@fastify/middie": "^8.3.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "bcryptjs": "^2.4.3",
@@ -22,12 +24,13 @@
     "chalk": "^5.3.0",
     "commander": "^11.0.0",
     "dotenv": "^16.1.4",
-    "fastify": "^4.19.2",
+    "fastify": "^4.24.3",
     "jaz-ts-utils": "^7.8.0",
     "jsonwebtoken": "^9.0.0",
     "kysely": "^0.25.0",
     "node-config-ts": "^3.3.1",
     "nodemailer": "^6.9.3",
+    "oidc-provider": "^8.4.1",
     "tachyon-protocol": "^0.1.12",
     "ws": "^8.13.0"
   },
@@ -42,6 +45,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^20.3.1",
     "@types/nodemailer": "^6.4.8",
+    "@types/oidc-provider": "^8.4.2",
     "@types/ws": "^8.5.4",
     "@typescript-eslint/eslint-plugin": "^5.59.9",
     "@typescript-eslint/parser": "^5.59.9",

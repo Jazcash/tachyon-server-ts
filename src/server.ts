@@ -15,6 +15,11 @@ export class TachyonServer {
     constructor() {
         this.wss = new WebSocketServer({
             port: config.wssPort,
+            handleProtocols: (protocols, request) => {
+                console.log(protocols);
+                const clientProtocool = protocols.values().next().value;
+                return clientProtocool;
+            },
         });
 
         this.wss.on("listening", () => {
@@ -22,9 +27,7 @@ export class TachyonServer {
             this.onReady.dispatch();
 
             console.log(
-                chalk.green(
-                    `Tachyon ${tachyonMeta.version} ${this.wss} WebSocket Server now listening on port ${config.wssPort}`
-                )
+                chalk.green(`Tachyon ${tachyonMeta.version} WebSocket Server now listening on port ${config.wssPort}`)
             );
         });
 

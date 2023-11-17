@@ -1,18 +1,18 @@
 import bcryptjs from "bcryptjs";
+import { MailOptions } from "nodemailer/lib/json-transport/index.js";
 
 import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { defineHandler } from "@/handlers.js";
+import { User } from "@/model/user.js";
 
 const hash = bcryptjs.hash;
-
-console.log(hash);
 
 export default defineHandler("account", "register", async (options, data) => {
     try {
         const hashedPassword = await hash(data.hashedPassword, 10); // second hash
 
-        await database
+        const user = await database
             .insertInto("user")
             .values({
                 email: data.email,
@@ -25,9 +25,12 @@ export default defineHandler("account", "register", async (options, data) => {
                 friendRequests: [],
                 ignores: [],
             })
+            .returningAll()
             .executeTakeFirstOrThrow();
 
-        // TODO: send verification email
+        if (config.accountVerification) {
+            await sendVerificationLink(user);
+        }
 
         return {
             status: "success",
@@ -51,3 +54,16 @@ export default defineHandler("account", "register", async (options, data) => {
         throw err;
     }
 });
+
+async function sendVerificationLink(user: User, mailConfig: Exclude<typeof config.mail, undefined>) {
+    const mailOptions: MailOptions = {
+        from: mailConfig.from,
+        to: user.email,
+        subject: `Beyond All Reason account verification`,
+        text: `Click the following link to verify your account: http://your-website.com/verify/${verificationToken}`,
+    };
+
+    // mail.sendMail();
+
+    // fastify.get("/");
+}

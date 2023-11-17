@@ -14,7 +14,8 @@
         "noUnusedLocals": false,
         "paths": {
             "@/*": ["src/*"]
-        }
+        },
+        "types": ["@fastify/express"]
     },
     "include": ["src/**/*"],
     "ts-node": {

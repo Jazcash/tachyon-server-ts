@@ -13,6 +13,7 @@ export const configSchema = Type.Object({
                 user: Type.String(),
                 pass: Type.String(),
             }),
+            from: Type.String(),
         })
     ),
 });
