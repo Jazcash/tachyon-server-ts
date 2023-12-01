@@ -1,5 +1,7 @@
 import Provider, { Configuration } from "oidc-provider";
 
+import { config } from "@/config.js";
+
 const configuration: Configuration = {
     features: {
         devInteractions: { enabled: true },
@@ -11,14 +13,13 @@ const configuration: Configuration = {
     },
     clients: [
         {
-            client_id: "foo",
-            client_secret: "bar",
+            client_id: "lobby",
+            //client_secret: "",
             redirect_uris: ["https://oidcdebugger.com/debug"],
             grant_types: ["authorization_code"],
-            //grant_types: ["authorization_code"],
-            response_types: ["code"],
-            scope: "openid",
             //grant_types: ["client_credentials"],
+            response_types: ["code"],
+            scope: "openid lobby",
         },
     ],
     async findAccount(context, id) {
@@ -34,4 +35,4 @@ const configuration: Configuration = {
     pkce: { required: () => false, methods: ["S256"] },
 };
 
-export const oidc = new Provider("http://localhost:3005", configuration);
+export const oidc = new Provider(`http://localhost:${config.port}`, configuration);

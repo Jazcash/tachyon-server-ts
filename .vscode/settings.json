@@ -7,5 +7,6 @@
     "[typescript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
-    "typescript.preferences.importModuleSpecifierEnding": "js"
+    "typescript.preferences.importModuleSpecifierEnding": "js",
+    "typescript.preferences.importModuleSpecifier": "non-relative"
 }

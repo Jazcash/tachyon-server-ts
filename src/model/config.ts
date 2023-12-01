@@ -1,8 +1,7 @@
 import { Static, Type } from "@sinclair/typebox";
 
 export const configSchema = Type.Object({
-    wssPort: Type.Optional(Type.Integer({ default: 3005 })),
-    httpPort: Type.Optional(Type.Integer({ default: 3006 })),
+    port: Type.Optional(Type.Integer({ default: 3005 })),
     accountVerification: Type.Optional(Type.Boolean({ default: true })),
     mail: Type.Optional(
         Type.Object({
@@ -16,6 +15,8 @@ export const configSchema = Type.Object({
             from: Type.String(),
         })
     ),
+    steamAppId: Type.String(),
+    steamWebApiKey: Type.String(),
 });
 
 export type Config = Static<typeof configSchema>;

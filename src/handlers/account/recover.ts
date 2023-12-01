@@ -1,7 +1,7 @@
-import { defineHandler } from "@/handlers.js";
+// import { defineHandler } from "@/handlers.js";
 
-export default defineHandler("account", "recover", async (options, data) => {
-    return {
-        status: "success",
-    };
-});
+// export default defineHandler("account", "recover", async (options, data) => {
+//     return {
+//         status: "success",
+//     };
+// });

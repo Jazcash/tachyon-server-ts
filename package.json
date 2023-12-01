@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "start": "node --loader ts-paths-esm-loader src/cli.ts",
-    "prepare": "ts-patch install -s",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "author": "Jazcash",
@@ -29,9 +28,10 @@
     "jsonwebtoken": "^9.0.0",
     "kysely": "^0.25.0",
     "node-config-ts": "^3.3.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.3",
     "oidc-provider": "^8.4.1",
-    "tachyon-protocol": "^0.1.12",
+    "tachyon-protocol": "^0.2.0",
     "ws": "^8.13.0"
   },
   "devDependencies": {

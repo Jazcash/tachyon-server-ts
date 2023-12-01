@@ -3,9 +3,10 @@ import type { PrivateUserClient } from "tachyon-protocol";
 
 export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
     userId: Generated<number>;
+    steamId: number | null;
     hashedPassword: string;
     email: string;
-    username: string;
+    displayName: string;
     verified: boolean;
 };
 
