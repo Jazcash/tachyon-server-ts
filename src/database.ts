@@ -26,7 +26,7 @@ await database.schema
 await database.schema
     .createTable("user")
     .ifNotExists()
-    .addColumn("userId", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("userId", "varchar", (col) => col.primaryKey())
     .addColumn("email", "varchar", (col) => col.notNull().unique())
     .addColumn("steamId", "varchar", (col) => col.unique())
     .addColumn("displayName", "varchar", (col) => col.notNull())
@@ -38,6 +38,21 @@ await database.schema
     .addColumn("friends", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("friendRequests", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("ignores", "json", (col) => col.notNull().defaultTo("[]"))
+    .execute();
+
+await database.schema
+    .createTable("oidc")
+    .ifNotExists()
+    .addColumn("id", "varchar", (col) => col.primaryKey())
+    .addColumn("type", "integer", (col) => col.notNull())
+    .addColumn("payload", "json")
+    .addColumn("grantId", "text")
+    .addColumn("userCode", "text", (col) => col.unique())
+    .addColumn("uid", "text", (col) => col.unique())
+    .addColumn("expiresAt", "datetime")
+    .addColumn("consumedAt", "datetime")
+    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .execute();
 
 let signSecret = "";

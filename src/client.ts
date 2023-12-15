@@ -7,13 +7,13 @@ import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
 import { handlers } from "@/handlers.js";
-import { User } from "@/model/user.js";
+import { UserRow } from "@/model/user.js";
 import { validators } from "@/validators.js";
 
 type SystemVersionResponseData = (SystemVersionResponse & { status: "success" })["data"];
 
 export class Client {
-    public user?: User;
+    public user?: UserRow;
     public ws: WebSocket;
     public socket: Socket;
 

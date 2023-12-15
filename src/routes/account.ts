@@ -1,48 +1,26 @@
-import bcryptjs from "bcryptjs";
+import { randomUUID } from "crypto";
 import { FastifyPluginAsync } from "fastify";
 import fetch from "node-fetch";
 
 import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { SteamSessionTicketResponse } from "@/model/steam-session-ticket.js";
-import { User } from "@/model/user.js";
-
-const hash = bcryptjs.hash;
+import { UserRow } from "@/model/user.js";
+import { hashPassword } from "@/utils/hash-password.js";
 
 export const accountRoutes: FastifyPluginAsync = async function (fastify) {
-    fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
-        const { ticket } = request.query;
-
-        try {
-            const query = new URLSearchParams({
-                appid: config.steamAppId,
-                key: config.steamWebApiKey,
-                ticket,
-            }).toString();
-
-            const res = await fetch(`https://api.steampowered.com/ISteamUserAuth/AuthenticateUserTicket/v1?${query}`, {
-                method: "GET",
-            });
-
-            const data = (await res.json()) as SteamSessionTicketResponse;
-
-            reply.send(data);
-        } catch (err) {
-            console.log("error validating steam session token", err);
-        }
-    });
-
     fastify.post<{ Body: { email: string; password: string; displayName: string } }>(
         "/register",
         async (request, reply) => {
             try {
                 const { email, password, displayName } = request.body;
 
-                const hashedPassword = await hash(password, 10);
+                const hashedPassword = await hashPassword(password);
 
                 const user = await database
                     .insertInto("user")
                     .values({
+                        userId: randomUUID(),
                         email,
                         steamId: null,
                         displayName,
@@ -75,9 +53,31 @@ export const accountRoutes: FastifyPluginAsync = async function (fastify) {
             }
         }
     );
+
+    fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
+        const { ticket } = request.query;
+
+        try {
+            const query = new URLSearchParams({
+                appid: config.steamAppId,
+                key: config.steamWebApiKey,
+                ticket,
+            }).toString();
+
+            const res = await fetch(`https://api.steampowered.com/ISteamUserAuth/AuthenticateUserTicket/v1?${query}`, {
+                method: "GET",
+            });
+
+            const data = (await res.json()) as SteamSessionTicketResponse;
+
+            reply.send(data);
+        } catch (err) {
+            console.log("error validating steam session token", err);
+        }
+    });
 };
 
-async function sendVerificationLink(user: User, mailConfig: Exclude<typeof config.mail, undefined>) {
+async function sendVerificationLink(user: UserRow, mailConfig: Exclude<typeof config.mail, undefined>) {
     // const mailOptions: MailOptions = {
     //     from: mailConfig.from,
     //     to: user.email,
