@@ -14,9 +14,11 @@
     "dist"
   ],
   "dependencies": {
+    "@fastify/cookie": "^9.2.0",
     "@fastify/express": "^2.3.0",
     "@fastify/formbody": "^7.4.0",
     "@fastify/middie": "^8.3.0",
+    "@fastify/session": "^10.7.0",
     "@fastify/view": "^8.2.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",

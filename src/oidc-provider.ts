@@ -6,6 +6,11 @@ import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { KyselyAdapter } from "@/kysely-adapter.js";
 
+/**
+ * https://dev.to/ebrahimmfadae/develop-an-openid-server-with-nodejs-typescript-9n1
+ * https://www.scottbrady91.com/openid-connect/getting-started-with-oidc-provider
+ */
+
 const cookieKeylist = ["verysecretkey1", "verysecretkey2"];
 const cookieKeys = Keygrip(cookieKeylist);
 
@@ -37,7 +42,21 @@ const configuration: Configuration = {
         clientCredentials: {
             enabled: true,
         },
-        resourceIndicators: {},
+        resourceIndicators: {
+            enabled: true,
+            async getResourceServerInfo(ctx, resourceIndicator) {
+                if (resourceIndicator === "urn:api") {
+                    return {
+                        scope: "read",
+                        audience: "urn:api",
+                        accessTokenTTL: 1 * 60 * 60, // 1 hour
+                        accessTokenFormat: "jwt",
+                    };
+                }
+
+                throw new Error("Invalid target?");
+            },
+        },
     },
     clients: [
         {

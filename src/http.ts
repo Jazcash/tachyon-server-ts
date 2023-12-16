@@ -1,5 +1,7 @@
+import fastifyCookie from "@fastify/cookie";
 import { fastifyFormbody } from "@fastify/formbody";
 import fastifyMiddie from "@fastify/middie";
+import fastifySession from "@fastify/session";
 import { fastifyView } from "@fastify/view";
 import chalk from "chalk";
 import ejs from "ejs";
@@ -9,6 +11,8 @@ import { config } from "@/config.js";
 import { oidc } from "@/oidc-provider.js";
 import { accountRoutes } from "@/routes/account.js";
 import { interactionRoutes } from "@/routes/interaction.js";
+import { introspectionRoutes } from "@/routes/introspection.js";
+import { testRoutes } from "@/routes/test.js";
 
 export const fastify = Fastify({
     logger: false,
@@ -19,12 +23,16 @@ oidc.proxy = true;
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, { engine: { ejs } });
+await fastify.register(fastifyCookie);
+await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
 
 await fastify.use("/oidc", oidc.callback());
 
 // routes
 await fastify.register(accountRoutes);
 await fastify.register(interactionRoutes);
+await fastify.register(introspectionRoutes);
+await fastify.register(testRoutes);
 
 fastify.get("/", async (request, reply) => {
     return reply.view("/src/views/index.ejs", { title: "Tachyon Server" });
