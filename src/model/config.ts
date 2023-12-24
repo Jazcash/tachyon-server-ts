@@ -17,6 +17,8 @@ export const configSchema = Type.Object({
     ),
     steamAppId: Type.String(),
     steamWebApiKey: Type.String(),
+    googleClientId: Type.String(),
+    googleClientSecret: Type.String(),
 });
 
 export type Config = Static<typeof configSchema>;

@@ -1,61 +1,58 @@
-import { randomUUID } from "crypto";
 import { FastifyPluginAsync } from "fastify";
 import fetch from "node-fetch";
+import { AuthorizationParameters, ClientMetadata, generators, Issuer } from "openid-client";
 
 import { config } from "@/config.js";
-import { database } from "@/database.js";
 import { SteamSessionTicketResponse } from "@/model/steam-session-ticket.js";
-import { UserRow } from "@/model/user.js";
-import { hashPassword } from "@/utils/hash-password.js";
 
 export const accountRoutes: FastifyPluginAsync = async function (fastify) {
-    fastify.post<{ Body: { email: string; password: string; displayName: string } }>(
-        "/register",
-        async (request, reply) => {
-            try {
-                const { email, password, displayName } = request.body;
+    fastify.get("/auth/login/google", async (req, reply) => {
+        const authUrl = await getOpenIdConnectAuthUrl({
+            client_id: config.googleClientId,
+            client_secret: config.googleClientSecret,
+            redirect_uri: "http://127.0.0.1:3006/oauth2callback", // TODO: config this
+        });
 
-                const hashedPassword = await hashPassword(password);
+        reply.redirect(authUrl);
+    });
 
-                const user = await database
-                    .insertInto("user")
-                    .values({
-                        userId: randomUUID(),
-                        email,
-                        steamId: null,
-                        displayName,
-                        hashedPassword,
-                        verified: !config.accountVerification,
-                        roles: [],
-                        icons: {},
-                        friends: [],
-                        friendRequests: [],
-                        ignores: [],
-                    })
-                    .returningAll()
-                    .executeTakeFirstOrThrow();
+    fastify.post("/auth/token/google", async (req, reply) => {
+        //
+    });
 
-                if (config.accountVerification) {
-                    //await sendVerificationLink(user);
-                }
+    // fastify.post("/auth/login/google", async (req, reply) => {
+    //     if (req.headers.authorization) {
+    //         // const stuff = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+    //         //     method: "get",
+    //         //     headers: {
+    //         //         authorization: req.headers.authorization,
+    //         //     },
+    //         // });
+    //         // const googleUser = await stuff.json();
+    //         // reply.send({ thing: googleUser });
+    //     } else {
+    //         reply.send(400);
+    //     }
+    // });
 
-                reply.code(200).send({ message: "User registered successfully." });
-            } catch (err: any) {
-                if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-                    const conflictColumn = err.message.split(": ")[1].split(".")[1];
-                    if (conflictColumn === "email") {
-                        return reply.code(400).send({ message: "An account with this email already exists." });
-                    }
-                }
-
-                console.error(err);
-                return reply.code(400).send({ message: "An unknown server error occurred." });
-            }
+    fastify.post("/auth/login/steam", async (req, reply) => {
+        if (req.headers.authorization) {
+            // const stuff = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+            //     method: "get",
+            //     headers: {
+            //         authorization: req.headers.authorization,
+            //     },
+            // });
+            // const googleUser = await stuff.json();
+            // reply.send({ thing: googleUser });
+            console.log(req.headers.authorization);
+        } else {
+            reply.send(400);
         }
-    );
+    });
 
-    fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
-        const { ticket } = request.query;
+    fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (req, reply) => {
+        const { ticket } = req.query;
 
         try {
             const query = new URLSearchParams({
@@ -77,13 +74,29 @@ export const accountRoutes: FastifyPluginAsync = async function (fastify) {
     });
 };
 
-async function sendVerificationLink(user: UserRow, mailConfig: Exclude<typeof config.mail, undefined>) {
-    // const mailOptions: MailOptions = {
-    //     from: mailConfig.from,
-    //     to: user.email,
-    //     subject: `Beyond All Reason account verification`,
-    //     text: `Click the following link to verify your account: http://your-website.com/verify/${verificationToken}`,
-    // };
-    // mail.sendMail();
-    // fastify.get("/");
+export type getOpenIdConnectAuthUrlOptions = {
+    clientId: string;
+    clientSecret?: string;
+};
+
+async function getOpenIdConnectAuthUrl(
+    clientOptions: ClientMetadata,
+    authUrlOptions: Partial<AuthorizationParameters> = {}
+) {
+    const issuer = await Issuer.discover("https://accounts.google.com");
+
+    const client = new issuer.Client({
+        response_types: ["code"],
+        ...clientOptions,
+    });
+
+    const code_verifier = generators.codeVerifier();
+    const url = client.authorizationUrl({
+        scope: "openid",
+        code_challenge: generators.codeChallenge(code_verifier),
+        code_challenge_method: "S256",
+        ...authUrlOptions,
+    });
+
+    return url;
 }

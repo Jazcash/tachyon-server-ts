@@ -1,13 +1,11 @@
+import { GeneratedAlways } from "kysely";
 import { Generated, Insertable, Selectable, Updateable } from "kysely";
-import type { PrivateUserClient } from "tachyon-protocol";
 
-export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
-    userId: Generated<string>;
-    steamId: number | null;
-    hashedPassword: string;
-    email: string;
+export type UserTable = {
+    userId: GeneratedAlways<number>;
+    steamId: string | null;
+    googleId: string | null;
     displayName: string;
-    verified: boolean;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
 };

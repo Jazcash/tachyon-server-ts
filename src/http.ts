@@ -8,17 +8,11 @@ import ejs from "ejs";
 import Fastify from "fastify";
 
 import { config } from "@/config.js";
-import { oidc } from "@/oidc-provider.js";
 import { accountRoutes } from "@/routes/account.js";
-import { interactionRoutes } from "@/routes/interaction.js";
-import { introspectionRoutes } from "@/routes/introspection.js";
-import { testRoutes } from "@/routes/test.js";
 
 export const fastify = Fastify({
     logger: false,
 });
-
-oidc.proxy = true;
 
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);
@@ -26,13 +20,10 @@ await fastify.register(fastifyView, { engine: { ejs } });
 await fastify.register(fastifyCookie);
 await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
 
-await fastify.use("/oidc", oidc.callback());
+// await setupPassport();
 
 // routes
 await fastify.register(accountRoutes);
-await fastify.register(interactionRoutes);
-await fastify.register(introspectionRoutes);
-await fastify.register(testRoutes);
 
 fastify.get("/", async (request, reply) => {
     return reply.view("/src/views/index.ejs", { title: "Tachyon Server" });
@@ -41,10 +32,7 @@ fastify.get("/", async (request, reply) => {
 export async function startHttpServer() {
     try {
         await fastify.listen({ port: config.port });
-        console.log(chalk.green(`Tachyon HTTP API listening on http://localhost:${config.port}`));
-        console.log(
-            chalk.green(`OpenID Connect config: http://localhost:${config.port}/oidc/.well-known/openid-configuration`)
-        );
+        console.log(chalk.green(`Tachyon HTTP API listening on http://127.0.0.1:${config.port}`));
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);
