@@ -1,6 +1,7 @@
 import Keygrip from "keygrip";
 import nodeJose from "node-jose";
 import Provider, { AccountClaims, Configuration, JWKS } from "oidc-provider";
+import { generators, Issuer } from "openid-client";
 
 import { config } from "@/config.js";
 import { database } from "@/database.js";
@@ -62,7 +63,7 @@ const configuration: Configuration = {
         {
             client_id: "BAR Lobby",
             client_secret: "fish",
-            redirect_uris: ["http://127.0.0.1:3006/cb"],
+            redirect_uris: ["http://127.0.0.1:3006/oauth2callback"],
             grant_types: ["authorization_code"],
             response_types: ["code"],
             scope: "openid email lobby",
@@ -73,10 +74,14 @@ const configuration: Configuration = {
         lobby: ["lobby"],
     },
     async findAccount(context, id) {
-        const user = await database.selectFrom("user").where("userId", "=", id).selectAll().executeTakeFirstOrThrow();
+        const user = await database
+            .selectFrom("user")
+            .where("userId", "=", parseInt(id))
+            .selectAll()
+            .executeTakeFirstOrThrow();
 
         return {
-            accountId: user.userId,
+            accountId: user.userId.toString(),
             async claims(use, scope) {
                 const accountInfo: AccountClaims = {
                     sub: id,
@@ -96,3 +101,20 @@ const configuration: Configuration = {
 };
 
 export const oidc = new Provider(`http://localhost:${config.port}`, configuration);
+
+oidc.proxy = true;
+
+// Google stuff
+// https://console.cloud.google.com/apis/credentials/oauthclient/1047182426627-sb707ggfiq4bukf7vr69e44el4lmql47.apps.googleusercontent.com?project=bar-lobby
+
+export const googleRedirectUrl = `http://localhost:${config.port}/interaction/callback/google`;
+
+const google = await Issuer.discover("https://accounts.google.com/.well-known/openid-configuration");
+export const googleClient = new google.Client({
+    client_id: config.googleClientId,
+    client_secret: config.googleClientSecret,
+    response_types: ["code"],
+    redirect_uris: [googleRedirectUrl],
+});
+
+export const codeVerifier = generators.codeVerifier();

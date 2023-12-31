@@ -1,36 +1,71 @@
 import Database from "better-sqlite3";
 import { randomBytes } from "crypto";
-import { SerializePlugin } from "jaz-ts-utils";
 import { Kysely, SqliteDialect } from "kysely";
+import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/database.js";
 
 const serializePlugin = new SerializePlugin();
 
+const dateRegex = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?$/;
+
 export const database = new Kysely<DatabaseModel>({
     dialect: new SqliteDialect({
         database: new Database("./database.db"),
     }),
-    plugins: [serializePlugin],
+    plugins: [
+        // https://github.com/subframe7536/kysely-sqlite-tools/blob/master/packages/plugin-serialize
+        new SerializePlugin({
+            deserializer: (parameter) => {
+                if (skipTransform(parameter)) {
+                    return parameter;
+                }
+                if (typeof parameter === "string") {
+                    if (/^(true|false)$/.test(parameter)) {
+                        return parameter === "true";
+                    } else if (dateRegex.test(parameter)) {
+                        return new Date(parameter);
+                    } else if (parameter.match(/^[[{]/) != null) {
+                        try {
+                            return JSON.parse(parameter);
+                        } catch (err) {
+                            return parameter;
+                        }
+                    } else {
+                        return parameter;
+                    }
+                }
+            },
+        }),
+    ],
 });
 
-await serializePlugin.setSchema(database as any);
+function skipTransform(parameter: unknown) {
+    return (
+        parameter === undefined ||
+        parameter === null ||
+        typeof parameter === "bigint" ||
+        typeof parameter === "number" ||
+        (typeof parameter === "object" && "buffer" in parameter)
+    );
+}
 
 await database.schema
     .createTable("settings")
     .ifNotExists()
-    .addColumn("key", "varchar", (col) => col.primaryKey())
+    .addColumn("key", "text", (col) => col.primaryKey())
     .addColumn("value", "blob", (col) => col.notNull().unique())
     .execute();
 
 await database.schema
     .createTable("user")
     .ifNotExists()
-    .addColumn("userId", "varchar", (col) => col.primaryKey())
-    .addColumn("email", "varchar", (col) => col.notNull().unique())
-    .addColumn("steamId", "varchar", (col) => col.unique())
-    .addColumn("displayName", "varchar", (col) => col.notNull())
-    .addColumn("hashedPassword", "varchar", (col) => col.notNull())
+    .addColumn("userId", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("email", "text", (col) => col.unique())
+    .addColumn("hashedPassword", "text")
+    .addColumn("steamId", "text", (col) => col.unique())
+    .addColumn("googleId", "text", (col) => col.unique())
+    .addColumn("displayName", "text", (col) => col.notNull())
     .addColumn("verified", "boolean", (col) => col.notNull().defaultTo(false))
     .addColumn("clanId", "integer")
     .addColumn("icons", "json", (col) => col.notNull().defaultTo("{}"))
@@ -43,7 +78,7 @@ await database.schema
 await database.schema
     .createTable("oidc")
     .ifNotExists()
-    .addColumn("id", "varchar", (col) => col.primaryKey())
+    .addColumn("id", "text", (col) => col.primaryKey())
     .addColumn("type", "integer", (col) => col.notNull())
     .addColumn("payload", "json")
     .addColumn("grantId", "text")

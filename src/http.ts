@@ -14,11 +14,12 @@ import { interactionRoutes } from "@/routes/interaction.js";
 import { introspectionRoutes } from "@/routes/introspection.js";
 import { testRoutes } from "@/routes/test.js";
 
-export const fastify = Fastify({
-    logger: false,
-});
+export const fastify = Fastify();
 
-oidc.proxy = true;
+fastify.setErrorHandler((err, req, reply) => {
+    console.error(err);
+    reply.send(err);
+});
 
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);

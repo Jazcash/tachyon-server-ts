@@ -1,8 +1,10 @@
 import { FastifyPluginAsync } from "fastify";
 import { InteractionResults } from "oidc-provider";
+import { generators } from "openid-client";
 
 import { database } from "@/database.js";
-import { oidc } from "@/oidc-provider.js";
+import { UserRow } from "@/model/user.js";
+import { codeVerifier, googleClient, googleRedirectUrl, oidc } from "@/oidc-provider.js";
 import { comparePassword } from "@/utils/hash-password.js";
 
 function debug(obj: any) {
@@ -40,41 +42,45 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
                 },
             });
         } else {
-            reply.code(501).send("Not implemented.");
+            return reply.code(501).send("Not implemented.");
         }
     });
 
-    fastify.post<{ Body: { email: string; password: string } }>("/interaction/:uid/login", async (req, reply) => {
-        const {
-            prompt: { name },
-        } = await oidc.interactionDetails(req.raw, reply.raw);
+    fastify.post<{ Body: { email?: string; password?: string } }>("/interaction/:uid/login", async (req, reply) => {
+        const { prompt } = await oidc.interactionDetails(req.raw, reply.raw);
 
-        if (name === "login") {
-            let result: InteractionResults | undefined;
+        if (prompt.name === "login") {
+            let result: InteractionResults = {
+                error: "access_denied",
+                message: "Username or password is incorrect.",
+            };
 
             try {
-                const user = await database
-                    .selectFrom("user")
-                    .where("email", "=", req.body.email)
-                    .selectAll()
-                    .executeTakeFirstOrThrow();
+                if (req.body.email && req.body.password) {
+                    const user = await database
+                        .selectFrom("user")
+                        .where("email", "=", req.body.email)
+                        .selectAll()
+                        .executeTakeFirstOrThrow();
 
-                const passwordCorrect = await comparePassword(req.body.password, user.hashedPassword);
+                    if (!user.hashedPassword) {
+                        throw new Error("Hashed password is null");
+                    }
 
-                if (passwordCorrect) {
-                    result = {
-                        login: {
-                            accountId: user.userId,
-                        },
-                    };
-                } else {
-                    throw new Error("Invalid password");
+                    const passwordCorrect = await comparePassword(req.body.password, user.hashedPassword);
+
+                    if (passwordCorrect) {
+                        result = {
+                            login: {
+                                accountId: user.userId.toString(),
+                            },
+                        };
+                    } else {
+                        throw new Error("Invalid password");
+                    }
                 }
             } catch (err) {
-                result = {
-                    error: "access_denied",
-                    message: "Username or password is incorrect.",
-                };
+                console.error(err);
             }
 
             return oidc.interactionFinished(req.raw, reply.raw, result, {
@@ -118,7 +124,7 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
 
                 const result = { consent: { grantId } };
 
-                await oidc.interactionFinished(req.raw, reply.raw, result, {
+                return oidc.interactionFinished(req.raw, reply.raw, result, {
                     mergeWithLastSubmission: true,
                 });
             }
@@ -133,9 +139,65 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
             message: "End-User aborted interaction",
         };
 
-        await oidc.interactionFinished(req.raw, reply.raw, result, {
+        return oidc.interactionFinished(req.raw, reply.raw, result, {
             mergeWithLastSubmission: false,
         });
+    });
+
+    fastify.get("/interaction/callback/google", async (req, reply) => {
+        const params = googleClient.callbackParams(req.raw);
+        const tokenSet = await googleClient.callback(googleRedirectUrl, params, {
+            code_verifier: codeVerifier,
+            response_type: "code",
+        });
+        const claims = tokenSet.claims();
+        const googleAccountId = claims.sub.toString();
+
+        let user: UserRow | undefined;
+
+        user = await database.selectFrom("user").where("googleId", "=", googleAccountId).selectAll().executeTakeFirst();
+
+        if (!user) {
+            user = await database
+                .insertInto("user")
+                .values({
+                    displayName: "Player",
+                    verified: true,
+                    googleId: googleAccountId,
+                    roles: [],
+                    icons: {},
+                    friends: [],
+                    friendRequests: [],
+                    ignores: [],
+                })
+                .returningAll()
+                .executeTakeFirstOrThrow();
+        }
+
+        await oidc.interactionFinished(
+            req.raw,
+            reply.raw,
+            {
+                login: {
+                    accountId: user.userId.toString(),
+                },
+            },
+            {
+                mergeWithLastSubmission: false,
+            }
+        );
+
+        return reply.status(200).send("Authorization complete, you may now close this window.");
+    });
+
+    fastify.get("/interaction/:uid/google", async (req, reply) => {
+        const authUrl = googleClient.authorizationUrl({
+            scope: "openid",
+            code_challenge: generators.codeChallenge(codeVerifier),
+            code_challenge_method: "S256",
+        });
+
+        reply.redirect(303, authUrl);
     });
 };
 

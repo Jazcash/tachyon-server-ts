@@ -21,12 +21,8 @@ const oidcTypes = {
 };
 
 const prepare = (doc: OidcRow) => {
-    const isPayloadJson = doc.payload && typeof doc.payload === "object" && !Array.isArray(doc.payload);
-
-    const payload = isPayloadJson ? doc.payload : {};
-
     return {
-        ...payload,
+        ...doc.payload,
         ...(doc.consumedAt ? { consumed: true } : undefined),
     };
 };
@@ -60,31 +56,25 @@ export class KyselyAdapter implements Adapter {
 
     async find(id: string): Promise<void | AdapterPayload | undefined> {
         const doc = await database.selectFrom("oidc").where("id", "=", id).selectAll().executeTakeFirst();
-
         if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) {
             return undefined;
         }
-
         return prepare(doc);
     }
 
     async findByUserCode(userCode: string): Promise<void | AdapterPayload | undefined> {
         const doc = await database.selectFrom("oidc").where("userCode", "=", userCode).selectAll().executeTakeFirst();
-
         if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) {
             return undefined;
         }
-
         return prepare(doc);
     }
 
     async findByUid(uid: string): Promise<void | AdapterPayload | undefined> {
         const doc = await database.selectFrom("oidc").where("uid", "=", uid).selectAll().executeTakeFirst();
-
         if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) {
             return undefined;
         }
-
         return prepare(doc);
     }
 

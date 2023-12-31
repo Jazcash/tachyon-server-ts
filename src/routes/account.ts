@@ -1,58 +1,54 @@
-import { randomUUID } from "crypto";
 import { FastifyPluginAsync } from "fastify";
 import fetch from "node-fetch";
 
 import { config } from "@/config.js";
-import { database } from "@/database.js";
 import { SteamSessionTicketResponse } from "@/model/steam-session-ticket.js";
 import { UserRow } from "@/model/user.js";
-import { hashPassword } from "@/utils/hash-password.js";
 
 export const accountRoutes: FastifyPluginAsync = async function (fastify) {
-    fastify.post<{ Body: { email: string; password: string; displayName: string } }>(
-        "/register",
-        async (request, reply) => {
-            try {
-                const { email, password, displayName } = request.body;
+    // fastify.post<{ Body: { email: string; password: string; displayName: string } }>(
+    //     "/register",
+    //     async (request, reply) => {
+    //         try {
+    //             const { email, password, displayName } = request.body;
 
-                const hashedPassword = await hashPassword(password);
+    //             const hashedPassword = await hashPassword(password);
 
-                const user = await database
-                    .insertInto("user")
-                    .values({
-                        userId: randomUUID(),
-                        email,
-                        steamId: null,
-                        displayName,
-                        hashedPassword,
-                        verified: !config.accountVerification,
-                        roles: [],
-                        icons: {},
-                        friends: [],
-                        friendRequests: [],
-                        ignores: [],
-                    })
-                    .returningAll()
-                    .executeTakeFirstOrThrow();
+    //             const user = await database
+    //                 .insertInto("user")
+    //                 .values({
+    //                     userId: randomUUID(),
+    //                     email,
+    //                     displayName,
+    //                     hashedPassword,
+    //                     verified: !config.accountVerification,
+    //                     roles: [],
+    //                     icons: {},
+    //                     friends: [],
+    //                     friendRequests: [],
+    //                     ignores: [],
+    //                 })
+    //                 .returningAll()
+    //                 .executeTakeFirstOrThrow();
 
-                if (config.accountVerification) {
-                    //await sendVerificationLink(user);
-                }
+    //             if (config.accountVerification) {
+    //                 //await sendVerificationLink(user);
+    //             }
 
-                reply.code(200).send({ message: "User registered successfully." });
-            } catch (err: any) {
-                if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-                    const conflictColumn = err.message.split(": ")[1].split(".")[1];
-                    if (conflictColumn === "email") {
-                        return reply.code(400).send({ message: "An account with this email already exists." });
-                    }
-                }
+    //             reply.code(200).send({ message: "User registered successfully." });
+    //         } catch (err: any) {
+    //             if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    //                 const conflictColumn = err.message.split(": ")[1].split(".")[1];
+    //                 if (conflictColumn === "email") {
+    //                     return reply.code(400).send({ message: "An account with this email already exists." });
+    //                 }
+    //             }
 
-                console.error(err);
-                return reply.code(400).send({ message: "An unknown server error occurred." });
-            }
-        }
-    );
+    //             console.error(err);
+    //             return reply.code(400).send({ message: "An unknown server error occurred." });
+    //         }
+    //     }
+    // );
 
     fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
         const { ticket } = request.query;
