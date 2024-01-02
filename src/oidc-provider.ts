@@ -112,8 +112,9 @@ export const googleRedirectUrl = `http://localhost:${config.port}/interaction/ca
 const google = await Issuer.discover("https://accounts.google.com/.well-known/openid-configuration");
 export const googleClient = new google.Client({
     client_id: config.googleClientId,
-    client_secret: config.googleClientSecret,
-    response_types: ["code"],
+    //client_secret: config.googleClientSecret,
+    response_types: ["id_token"],
+    //grant_types: ["implicit"],
     redirect_uris: [googleRedirectUrl],
 });
 

@@ -1,10 +1,10 @@
+import { randomBytes } from "crypto";
 import { FastifyPluginAsync } from "fastify";
 import { InteractionResults } from "oidc-provider";
-import { generators } from "openid-client";
 
 import { database } from "@/database.js";
 import { UserRow } from "@/model/user.js";
-import { codeVerifier, googleClient, googleRedirectUrl, oidc } from "@/oidc-provider.js";
+import { googleClient, oidc } from "@/oidc-provider.js";
 import { comparePassword } from "@/utils/hash-password.js";
 
 function debug(obj: any) {
@@ -28,6 +28,7 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
                     params: debug(params),
                     prompt: debug(prompt),
                 },
+                nonce: reply.cspNonce.script,
             });
         } else if (prompt.name === "consent" && isInteractionParams(params)) {
             return reply.view("/src/views/consent.ejs", {
@@ -40,6 +41,7 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
                     params: debug(params),
                     prompt: debug(prompt),
                 },
+                nonce: reply.cspNonce.script,
             });
         } else {
             return reply.code(501).send("Not implemented.");
@@ -144,61 +146,164 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
         });
     });
 
-    fastify.get("/interaction/callback/google", async (req, reply) => {
-        const params = googleClient.callbackParams(req.raw);
-        const tokenSet = await googleClient.callback(googleRedirectUrl, params, {
-            code_verifier: codeVerifier,
-            response_type: "code",
-        });
-        const claims = tokenSet.claims();
-        const googleAccountId = claims.sub.toString();
+    fastify.get<{ Params: { uid: string } }>("/interaction/:uid/google", async (req, reply) => {
+        const nonce = randomBytes(32).toString("hex");
+        const state = `${req.params.uid}|${nonce}`;
+        //const path = `/interaction/${req.params.uid}/google`;
 
-        let user: UserRow | undefined;
-
-        user = await database.selectFrom("user").where("googleId", "=", googleAccountId).selectAll().executeTakeFirst();
-
-        if (!user) {
-            user = await database
-                .insertInto("user")
-                .values({
-                    displayName: "Player",
-                    verified: true,
-                    googleId: googleAccountId,
-                    roles: [],
-                    icons: {},
-                    friends: [],
-                    friendRequests: [],
-                    ignores: [],
-                })
-                .returningAll()
-                .executeTakeFirstOrThrow();
-        }
-
-        await oidc.interactionFinished(
-            req.raw,
-            reply.raw,
-            {
-                login: {
-                    accountId: user.userId.toString(),
-                },
-            },
-            {
-                mergeWithLastSubmission: false,
-            }
-        );
-
-        return reply.status(200).send("Authorization complete, you may now close this window.");
-    });
-
-    fastify.get("/interaction/:uid/google", async (req, reply) => {
         const authUrl = googleClient.authorizationUrl({
+            state,
+            nonce,
             scope: "openid",
-            code_challenge: generators.codeChallenge(codeVerifier),
-            code_challenge_method: "S256",
         });
 
-        reply.redirect(303, authUrl);
+        return (
+            reply
+                //.setCookie("google.state", state, { path, sameSite: "strict" })
+                //.setCookie("google.nonce", nonce, { path, sameSite: "strict" })
+                .redirect(303, authUrl)
+        );
     });
+
+    fastify.get("/interaction/callback/google", async (req, reply) => {
+        return reply.view("/src/views/repost.ejs", { strategy: "google", nonce: reply.cspNonce.script });
+    });
+
+    fastify.post<{ Params: { uid: string }; Body: { id_token: string; state: string } }>(
+        "/interaction/:uid/google",
+        async (req, reply) => {
+            const tokenSet = await googleClient.callback(
+                undefined,
+                {
+                    id_token: req.body.id_token,
+                    state: req.body.state,
+                },
+                {
+                    state: req.body.state,
+                    nonce: req.body.state.split("|")[1],
+                    response_type: "id_token",
+                }
+            );
+
+            const claims = tokenSet.claims();
+            const googleAccountId = claims.sub.toString();
+
+            let user: UserRow | undefined;
+
+            user = await database
+                .selectFrom("user")
+                .where("googleId", "=", googleAccountId)
+                .selectAll()
+                .executeTakeFirst();
+
+            if (!user) {
+                user = await database
+                    .insertInto("user")
+                    .values({
+                        displayName: "Player",
+                        verified: true,
+                        googleId: googleAccountId,
+                        roles: [],
+                        icons: {},
+                        friends: [],
+                        friendRequests: [],
+                        ignores: [],
+                    })
+                    .returningAll()
+                    .executeTakeFirstOrThrow();
+            }
+
+            return oidc.interactionFinished(
+                req.raw,
+                reply.raw,
+                {
+                    login: {
+                        accountId: user.userId.toString(),
+                    },
+                },
+                {
+                    mergeWithLastSubmission: false,
+                }
+            );
+
+            //return reply.status(200).send("Authorization complete, you may now close this window.");
+        }
+    );
+
+    // fastify.get<{ Params: { uid: string } }>("/interaction/:uid/google", async (req, reply) => {
+    //     const { prompt } = await oidc.interactionDetails(req.raw, reply.raw);
+
+    //     console.log({ uid: req.params.uid });
+
+    //     if (prompt.name === "login") {
+    //         const params = googleClient.callbackParams(req.raw);
+
+    //         if (Object.keys(params).length === 0) {
+    //             // when user has clicked 'Sign in with Google'
+
+    //             const nonce = randomBytes(32).toString("hex");
+
+    //             const authUrl = googleClient.authorizationUrl({
+    //                 scope: "openid",
+    //                 nonce,
+    //             });
+
+    //             return reply.redirect(303, authUrl);
+    //         } else {
+    //             // when our repost.ejs form posts
+    //         }
+
+    //         const tokenSet = await googleClient.callback(googleRedirectUrl, params, {
+    //             //code_verifier: codeVerifier,
+    //             //response_type: "code",
+    //             response_type: "id_token",
+    //         });
+    //         const claims = tokenSet.claims();
+    //         const googleAccountId = claims.sub.toString();
+
+    //         let user: UserRow | undefined;
+
+    //         user = await database
+    //             .selectFrom("user")
+    //             .where("googleId", "=", googleAccountId)
+    //             .selectAll()
+    //             .executeTakeFirst();
+
+    //         if (!user) {
+    //             user = await database
+    //                 .insertInto("user")
+    //                 .values({
+    //                     displayName: "Player",
+    //                     verified: true,
+    //                     googleId: googleAccountId,
+    //                     roles: [],
+    //                     icons: {},
+    //                     friends: [],
+    //                     friendRequests: [],
+    //                     ignores: [],
+    //                 })
+    //                 .returningAll()
+    //                 .executeTakeFirstOrThrow();
+    //         }
+
+    //         await oidc.interactionFinished(
+    //             req.raw,
+    //             reply.raw,
+    //             {
+    //                 login: {
+    //                     accountId: user.userId.toString(),
+    //                 },
+    //             },
+    //             {
+    //                 mergeWithLastSubmission: false,
+    //             }
+    //         );
+
+    //         return reply.status(200).send("Authorization complete, you may now close this window.");
+    //     } else {
+    //         console.error(`Unhandled prompt: ${prompt.name}`);
+    //     }
+    // });
 };
 
 function isInteractionParams(params: any): params is {

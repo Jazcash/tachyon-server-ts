@@ -1,5 +1,6 @@
 import fastifyCookie from "@fastify/cookie";
 import { fastifyFormbody } from "@fastify/formbody";
+import fastifyHelmet from "@fastify/helmet";
 import fastifyMiddie from "@fastify/middie";
 import fastifySession from "@fastify/session";
 import { fastifyView } from "@fastify/view";
@@ -14,7 +15,9 @@ import { interactionRoutes } from "@/routes/interaction.js";
 import { introspectionRoutes } from "@/routes/introspection.js";
 import { testRoutes } from "@/routes/test.js";
 
-export const fastify = Fastify();
+export const fastify = Fastify({
+    trustProxy: true,
+});
 
 fastify.setErrorHandler((err, req, reply) => {
     console.error(err);
@@ -26,6 +29,7 @@ await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, { engine: { ejs } });
 await fastify.register(fastifyCookie);
 await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
+await fastify.register(fastifyHelmet, { enableCSPNonces: true });
 
 await fastify.use("/oidc", oidc.callback());
 
