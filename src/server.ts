@@ -29,7 +29,7 @@ export class TachyonServer {
 
             console.log(
                 chalk.green(
-                    `Tachyon ${tachyonMeta.version} WebSocket Server now listening on ws://localhost:${config.port}`
+                    `Tachyon ${tachyonMeta.version} WebSocket Server now listening on ws://127.0.0.1:${config.port}`
                 )
             );
         });

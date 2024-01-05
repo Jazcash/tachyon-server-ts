@@ -1,7 +1,6 @@
 import { Generated, GeneratedAlways, Insertable, Selectable, Updateable } from "kysely";
-import type { PrivateUserClient } from "tachyon-protocol";
 
-export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
+export type UserTable = {
     userId: GeneratedAlways<number>;
     email: string | null;
     hashedPassword: string | null;
@@ -9,6 +8,11 @@ export type UserTable = Omit<PrivateUserClient, "userId" | "battleStatus"> & {
     googleId: string | null;
     verified: boolean;
     displayName: string;
+    friends: Generated<number[]>;
+    friendRequests: Generated<number[]>;
+    ignores: Generated<number[]>;
+    roles: Generated<string[]>;
+    clanId: number | null;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
 };

@@ -4,6 +4,7 @@ import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/database.js";
+import { hashPassword } from "@/utils/hash-password.js";
 
 const serializePlugin = new SerializePlugin();
 
@@ -61,13 +62,13 @@ await database.schema
     .createTable("user")
     .ifNotExists()
     .addColumn("userId", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("email", "text", (col) => col.unique())
-    .addColumn("hashedPassword", "text")
-    .addColumn("steamId", "text", (col) => col.unique())
-    .addColumn("googleId", "text", (col) => col.unique())
+    .addColumn("email", "text", (col) => col.unique().defaultTo(null))
+    .addColumn("hashedPassword", "text", (col) => col.defaultTo(null))
+    .addColumn("steamId", "text", (col) => col.unique().defaultTo(null))
+    .addColumn("googleId", "text", (col) => col.unique().defaultTo(null))
     .addColumn("displayName", "text", (col) => col.notNull())
     .addColumn("verified", "boolean", (col) => col.notNull().defaultTo(false))
-    .addColumn("clanId", "integer")
+    .addColumn("clanId", "integer", (col) => col.defaultTo(null))
     .addColumn("icons", "json", (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("friends", "json", (col) => col.notNull().defaultTo("[]"))
@@ -88,6 +89,17 @@ await database.schema
     .addColumn("consumedAt", "datetime")
     .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .execute();
+
+await database
+    .insertInto("user")
+    .values({
+        email: "test@tachyontest.com",
+        hashedPassword: await hashPassword("fish"),
+        displayName: "Player",
+        verified: true,
+    })
+    .onConflict((oc) => oc.doNothing())
     .execute();
 
 let signSecret = "";

@@ -54,7 +54,7 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
         if (prompt.name === "login") {
             let result: InteractionResults = {
                 error: "access_denied",
-                message: "Username or password is incorrect.",
+                error_description: "Username or password is incorrect.",
             };
 
             try {
@@ -138,7 +138,7 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
     fastify.get("/interaction/:uid/abort", async (req, reply) => {
         const result: InteractionResults = {
             error: "access_denied",
-            message: "End-User aborted interaction",
+            error_description: "End-User aborted interaction",
         };
 
         return oidc.interactionFinished(req.raw, reply.raw, result, {
@@ -167,6 +167,10 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
 
     fastify.get("/interaction/callback/google", async (req, reply) => {
         return reply.view("/src/views/repost.ejs", { strategy: "google", nonce: reply.cspNonce.script });
+    });
+
+    fastify.get("/test", async (req, reply) => {
+        reply.send("test");
     });
 
     fastify.post<{ Params: { uid: string }; Body: { id_token: string; state: string } }>(
@@ -204,7 +208,6 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
                         verified: true,
                         googleId: googleAccountId,
                         roles: [],
-                        icons: {},
                         friends: [],
                         friendRequests: [],
                         ignores: [],
@@ -225,85 +228,8 @@ export const interactionRoutes: FastifyPluginAsync = async function (fastify) {
                     mergeWithLastSubmission: false,
                 }
             );
-
-            //return reply.status(200).send("Authorization complete, you may now close this window.");
         }
     );
-
-    // fastify.get<{ Params: { uid: string } }>("/interaction/:uid/google", async (req, reply) => {
-    //     const { prompt } = await oidc.interactionDetails(req.raw, reply.raw);
-
-    //     console.log({ uid: req.params.uid });
-
-    //     if (prompt.name === "login") {
-    //         const params = googleClient.callbackParams(req.raw);
-
-    //         if (Object.keys(params).length === 0) {
-    //             // when user has clicked 'Sign in with Google'
-
-    //             const nonce = randomBytes(32).toString("hex");
-
-    //             const authUrl = googleClient.authorizationUrl({
-    //                 scope: "openid",
-    //                 nonce,
-    //             });
-
-    //             return reply.redirect(303, authUrl);
-    //         } else {
-    //             // when our repost.ejs form posts
-    //         }
-
-    //         const tokenSet = await googleClient.callback(googleRedirectUrl, params, {
-    //             //code_verifier: codeVerifier,
-    //             //response_type: "code",
-    //             response_type: "id_token",
-    //         });
-    //         const claims = tokenSet.claims();
-    //         const googleAccountId = claims.sub.toString();
-
-    //         let user: UserRow | undefined;
-
-    //         user = await database
-    //             .selectFrom("user")
-    //             .where("googleId", "=", googleAccountId)
-    //             .selectAll()
-    //             .executeTakeFirst();
-
-    //         if (!user) {
-    //             user = await database
-    //                 .insertInto("user")
-    //                 .values({
-    //                     displayName: "Player",
-    //                     verified: true,
-    //                     googleId: googleAccountId,
-    //                     roles: [],
-    //                     icons: {},
-    //                     friends: [],
-    //                     friendRequests: [],
-    //                     ignores: [],
-    //                 })
-    //                 .returningAll()
-    //                 .executeTakeFirstOrThrow();
-    //         }
-
-    //         await oidc.interactionFinished(
-    //             req.raw,
-    //             reply.raw,
-    //             {
-    //                 login: {
-    //                     accountId: user.userId.toString(),
-    //                 },
-    //             },
-    //             {
-    //                 mergeWithLastSubmission: false,
-    //             }
-    //         );
-
-    //         return reply.status(200).send("Authorization complete, you may now close this window.");
-    //     } else {
-    //         console.error(`Unhandled prompt: ${prompt.name}`);
-    //     }
-    // });
 };
 
 function isInteractionParams(params: any): params is {

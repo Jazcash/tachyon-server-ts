@@ -24,11 +24,11 @@ fastify.setErrorHandler((err, req, reply) => {
     reply.send(err);
 });
 
+await fastify.register(fastifyCookie);
+await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, { engine: { ejs } });
-await fastify.register(fastifyCookie);
-await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
 await fastify.register(fastifyHelmet, { enableCSPNonces: true });
 
 await fastify.use("/oidc", oidc.callback());
@@ -46,9 +46,9 @@ fastify.get("/", async (request, reply) => {
 export async function startHttpServer() {
     try {
         await fastify.listen({ port: config.port });
-        console.log(chalk.green(`Tachyon HTTP API listening on http://localhost:${config.port}`));
+        console.log(chalk.green(`Tachyon HTTP API listening on http://127.0.0.1:${config.port}`));
         console.log(
-            chalk.green(`OpenID Connect config: http://localhost:${config.port}/oidc/.well-known/openid-configuration`)
+            chalk.green(`OpenID Connect config: http://127.0.0.1:${config.port}/oidc/.well-known/openid-configuration`)
         );
     } catch (err) {
         fastify.log.error(err);

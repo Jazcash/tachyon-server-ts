@@ -100,21 +100,20 @@ const configuration: Configuration = {
     pkce: { required: () => false, methods: ["S256"] },
 };
 
-export const oidc = new Provider(`http://localhost:${config.port}`, configuration);
+export const oidc = new Provider(`http://127.0.0.1:${config.port}`, configuration);
 
 oidc.proxy = true;
 
 // Google stuff
 // https://console.cloud.google.com/apis/credentials/oauthclient/1047182426627-sb707ggfiq4bukf7vr69e44el4lmql47.apps.googleusercontent.com?project=bar-lobby
 
-export const googleRedirectUrl = `http://localhost:${config.port}/interaction/callback/google`;
+export const googleRedirectUrl = `http://127.0.0.1:${config.port}/interaction/callback/google`;
 
 const google = await Issuer.discover("https://accounts.google.com/.well-known/openid-configuration");
 export const googleClient = new google.Client({
     client_id: config.googleClientId,
     //client_secret: config.googleClientSecret,
     response_types: ["id_token"],
-    //grant_types: ["implicit"],
     redirect_uris: [googleRedirectUrl],
 });
 
