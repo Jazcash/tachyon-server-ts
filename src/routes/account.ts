@@ -4,6 +4,7 @@ import fetch from "node-fetch";
 import { config } from "@/config.js";
 import { SteamSessionTicketResponse } from "@/model/steam-session-ticket.js";
 import { UserRow } from "@/model/user.js";
+import { oidc } from "@/oidc-provider.js";
 
 export const accountRoutes: FastifyPluginAsync = async function (fastify) {
     // fastify.post<{ Body: { email: string; password: string; displayName: string } }>(
@@ -49,6 +50,30 @@ export const accountRoutes: FastifyPluginAsync = async function (fastify) {
     //         }
     //     }
     // );
+
+    fastify.get("/fish", async (req, reply) => {
+        const accessToken = req.headers.authorization?.replace(/^Bearer /, "") ?? "";
+
+        console.log(accessToken);
+
+        if (accessToken) {
+            // const test = await oidc.ClientCredentials.find(accessToken, { ignoreExpiration: true });
+
+            // console.log(test);
+
+            const test2 = await oidc.AccessToken.find(accessToken);
+
+            console.log(test2);
+
+            if (test2) {
+                reply.send("yep");
+            } else {
+                reply.status(401);
+            }
+        } else {
+            reply.status(401);
+        }
+    });
 
     fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
         const { ticket } = request.query;
