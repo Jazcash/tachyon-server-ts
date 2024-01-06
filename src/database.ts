@@ -77,18 +77,15 @@ await database.schema
     .execute();
 
 await database.schema
-    .createTable("oidc")
+    .createTable("oauthTokens")
     .ifNotExists()
-    .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("type", "integer", (col) => col.notNull())
-    .addColumn("payload", "json")
-    .addColumn("grantId", "text")
-    .addColumn("userCode", "text", (col) => col.unique())
-    .addColumn("uid", "text", (col) => col.unique())
-    .addColumn("expiresAt", "datetime")
-    .addColumn("consumedAt", "datetime")
-    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
-    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("userId", "integer", (col) => col.notNull())
+    .addColumn("clientId", "text", (col) => col.notNull())
+    .addColumn("accessToken", "text", (col) => col.notNull())
+    .addColumn("accessTokenExpiry", "datetime", (col) => col.notNull())
+    .addColumn("refreshToken", "text", (col) => col.notNull())
+    .addColumn("refreshTokenExpiry", "datetime", (col) => col.notNull())
     .execute();
 
 await database

@@ -1,0 +1,16 @@
+{{#> layout title="Login"}}
+
+{{#*inline "body"}}
+<form autocomplete="off" action="/interaction/<%= uid %>/login" method="post">
+  <label>Email</label>
+  <input required type="text" name="email" placeholder="Enter your email" value="test@tachyontest.com" />
+  <label>Password</label>
+  <input required type="password" name="password" placeholder="and password" value="fish" />
+
+  <button type="submit" class="login login-submit">Sign-in</button>
+</form>
+
+<a href="/interaction/<%= uid %>/google">Sign in with Google</a>
+{{/inline}}
+
+{{/layout}}

@@ -4,16 +4,17 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyMiddie from "@fastify/middie";
 import fastifySession from "@fastify/session";
 import { fastifyView } from "@fastify/view";
+import { User } from "@node-oauth/oauth2-server";
 import chalk from "chalk";
-import ejs from "ejs";
 import Fastify from "fastify";
+import handlebars from "handlebars";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 
 import { config } from "@/config.js";
-import { oidc } from "@/oidc-provider.js";
-import { accountRoutes } from "@/routes/account.js";
-import { interactionRoutes } from "@/routes/interaction.js";
-import { introspectionRoutes } from "@/routes/introspection.js";
-import { testRoutes } from "@/routes/test.js";
+import { authRoutes } from "@/routes/auth.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const fastify = Fastify({
     trustProxy: true,
@@ -28,28 +29,37 @@ await fastify.register(fastifyCookie);
 await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);
-await fastify.register(fastifyView, { engine: { ejs } });
+await fastify.register(fastifyView, {
+    engine: { handlebars },
+    root: path.join(__dirname, "./views2"),
+    options: {
+        partials: {
+            layout: "layout.hbs",
+        },
+    },
+});
 await fastify.register(fastifyHelmet, { enableCSPNonces: true });
 
-await fastify.use("/oidc", oidc.callback());
-
 // routes
-await fastify.register(accountRoutes);
-await fastify.register(interactionRoutes);
-await fastify.register(introspectionRoutes);
-await fastify.register(testRoutes);
+await fastify.register(authRoutes);
+
+declare module "fastify" {
+    export interface FastifyRequest {
+        user: User;
+    }
+}
+
+fastify.decorateRequest("user", null);
 
 fastify.get("/", async (request, reply) => {
-    return reply.view("/src/views/index.ejs", { title: "Tachyon Server" });
+    reply.send("I am a Tachyon Server!");
 });
 
 export async function startHttpServer() {
     try {
         await fastify.listen({ port: config.port });
         console.log(chalk.green(`Tachyon HTTP API listening on http://127.0.0.1:${config.port}`));
-        console.log(
-            chalk.green(`OpenID Connect config: http://127.0.0.1:${config.port}/oidc/.well-known/openid-configuration`)
-        );
+        //console.log(chalk.green(`OAuth Discovery: http://127.0.0.1:${config.port}/.well-known/openid-configuration`));
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);

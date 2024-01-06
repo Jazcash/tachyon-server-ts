@@ -35,30 +35,6 @@
       <a href="/interaction/<%= uid %>/google">Sign in with Google</a>
     </div>
 
-    <div>
-      <strong>uid</strong>: <%= uid %>
-    </div>
-  
-    <% if (session) { %>
-    <div>
-      SESSION <br>
-     ========= <br>
-      <%- session %>
-    </div>
-    <% } %>
-  
-    <div>
-      PARAMS <br>
-     ======== <br>
-      <%- dbg.params %>
-    </div>
-  
-    <div>
-      PROMPT <br>
-     ======== <br>
-      <%- dbg.prompt %>
-    </div>
-
     <script nonce="<%= nonce %>">
       console.log("login");
     </script>

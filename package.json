@@ -5,7 +5,7 @@
   "main": "dist/index",
   "type": "module",
   "scripts": {
-    "start": "node --loader ts-paths-esm-loader src/cli.ts",
+    "start": "npx tsx src/cli.ts",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "author": "Jazcash",
@@ -13,6 +13,9 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=16"
+  },
   "dependencies": {
     "@fastify/cookie": "^9.2.0",
     "@fastify/express": "^2.3.0",
@@ -21,6 +24,7 @@
     "@fastify/middie": "^8.3.0",
     "@fastify/session": "^10.7.0",
     "@fastify/view": "^8.2.0",
+    "@node-oauth/oauth2-server": "^5.1.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^2.1.1",
     "bcryptjs": "^2.4.3",
@@ -30,6 +34,7 @@
     "dotenv": "^16.1.4",
     "ejs": "^3.1.9",
     "fastify": "^4.24.3",
+    "handlebars": "^4.7.8",
     "jaz-ts-utils": "^7.8.0",
     "jose": "^5.1.3",
     "jsonwebtoken": "^9.0.0",
