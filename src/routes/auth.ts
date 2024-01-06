@@ -1,11 +1,12 @@
-import OAuth2Server from "@node-oauth/oauth2-server";
 import { FastifyPluginAsync } from "fastify";
 import fetch from "node-fetch";
-import { generators, Issuer } from "openid-client";
+import { AuthorizationParameters, generators, Issuer } from "openid-client";
 
 import { config } from "@/config.js";
+import { database } from "@/database.js";
 import { SteamSessionTicketResponse } from "@/model/steam-session-ticket.js";
 import { oauth } from "@/oauth.js";
+import { comparePassword } from "@/utils/hash-password.js";
 
 // https://console.cloud.google.com/apis/credentials/oauthclient/1047182426627-sb707ggfiq4bukf7vr69e44el4lmql47.apps.googleusercontent.com?project=bar-lobby
 const google = await Issuer.discover("https://accounts.google.com");
@@ -18,72 +19,96 @@ export const googleClient = new google.Client({
 export const codeVerifier = generators.codeVerifier();
 
 export const authRoutes: FastifyPluginAsync = async function (fastify) {
-    fastify.get<{ Querystring: { client_id: string; redirect_uri: string } }>(
+    // oauth routes based on https://github.com/node-oauth/express-oauth-server/blob/master/examples/postgresql/index.js
+
+    fastify.post("/oauth/token", oauth.token());
+
+    fastify.get<{ Querystring: AuthorizationParameters & { error?: string } }>(
         "/oauth/authorize",
         async (req, reply) => {
             if (!req.user) {
-                return reply.redirect(
-                    `/login?redirect=${req.url}&client_id=${req.query.client_id}&redirect_uri=${req.query.redirect_uri}`
-                );
+                const url = new URL(req.url, `http://${req.hostname}`);
+
+                url.searchParams.delete("error");
+
+                return reply.view("login", {
+                    queryString: url.search,
+                    error: req.query.error,
+                });
             }
 
-            return reply.view("authorize", {
-                client_id: req.query.client_id,
-                redirect_uri: req.query.redirect_uri,
-            });
+            console.log("User found!");
+
+            //return oauth.authorize();
         }
     );
 
-    fastify.post<{ Querystring: { client_id: string; redirect_uri: string } }>(
+    fastify.post<{ Querystring: AuthorizationParameters; Body: { email: string; password: string } }>(
         "/oauth/authorize",
         async (req, reply) => {
-            if (!req.user) {
-                return reply.redirect(
-                    `/login?redirect=${req.url}&client_id=${req.query.client_id}&redirect_uri=${req.query.redirect_uri}`
-                );
+            const user = await database
+                .selectFrom("user")
+                .where("email", "=", req.body.email)
+                .selectAll()
+                .executeTakeFirstOrThrow();
+
+            if (!user.hashedPassword) {
+                return reply.send("User exists but has an existing google/steam account");
             }
 
-            const oauthReq = new OAuth2Server.Request(req);
-            const oauthRes = new OAuth2Server.Response(reply);
-            return oauth.authorize(oauthReq, oauthRes);
+            const passwordCorrect = await comparePassword(req.body.password, user.hashedPassword);
+
+            if (!passwordCorrect) {
+                const url = new URL(req.url, `http://${req.hostname}`);
+
+                return reply.redirect(`/oauth/authorize${url.search}&error=invalid_credentials`);
+            }
+
+            req.user = user;
         }
     );
 
-    fastify.get<{ Querystring: { client_id: string; redirect_uri: string; redirect: string } }>(
-        "/login",
-        async (req, reply) => {
-            return reply.view("login", {
-                redirect: req.query.redirect,
-                client_id: req.query.client_id,
-                redirect_uri: req.query.redirect_uri,
-            });
-        }
-    );
-
-    fastify.post<{
-        Querystring: { client_id: string; redirect_uri: string; redirect: string };
-        Body: { email: string; client_id: string; redirect_uri: string; redirect: string };
-    }>("/login", function (req, reply) {
-        // @TODO: Insert your own login mechanism.
-        if (req.body.email !== "test@tachyontest.com") {
-            return reply.view("login", {
-                redirect: req.body.redirect,
-                client_id: req.body.client_id,
-                redirect_uri: req.body.redirect_uri,
-            });
-        }
-
-        // Successful logins should send the user back to /oauth/authorize.
-        const path = req.body.redirect || "/";
-
-        return reply.redirect(`/${path}?client_id=${req.query.client_id}&redirect_uri=${req.query.redirect_uri}`);
+    fastify.get("/login", async (req, reply) => {
+        return reply.view("login");
     });
 
-    fastify.post("/oauth/token", (req, reply) => {
-        const oauthReq = new OAuth2Server.Request(req);
-        const oauthRes = new OAuth2Server.Response(reply);
+    fastify.post<{ Body: { email: string; password: string } }>("/login", async (req, reply) => {
+        try {
+            console.log(req.body);
 
-        oauth.token(oauthReq, oauthRes);
+            if (req.body.email && req.body.password) {
+                const user = await database
+                    .selectFrom("user")
+                    .where("email", "=", req.body.email)
+                    .selectAll()
+                    .executeTakeFirstOrThrow();
+
+                if (!user.hashedPassword) {
+                    throw new Error("Hashed password is null");
+                }
+
+                const passwordCorrect = await comparePassword(req.body.password, user.hashedPassword);
+
+                if (passwordCorrect) {
+                    console.log(req.body);
+                    return reply.send("todo");
+                } else {
+                    throw new Error("Invalid password (probably shouldn't show this kind of message)");
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            reply.send(err);
+        }
+
+        // // Successful logins should send the user back to /oauth/authorize.
+        // const path = req.body.redirect || "/";
+
+        // return reply.redirect(`/${path}?client_id=${req.query.client_id}&redirect_uri=${req.query.redirect_uri}`);
+    });
+
+    fastify.get("/secret", async (req, reply) => {
+        await oauth.authenticate(req, reply);
     });
 
     fastify.get<{ Querystring: { ticket: string } }>("/steamauth", async (request, reply) => {
@@ -101,6 +126,8 @@ export const authRoutes: FastifyPluginAsync = async function (fastify) {
             });
 
             const data = (await res.json()) as SteamSessionTicketResponse;
+
+            console.log(data);
 
             reply.send(data);
         } catch (err) {

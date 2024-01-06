@@ -1,8 +1,9 @@
-import OAuth2Server from "@node-oauth/oauth2-server";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 import { database } from "@/database.js";
+import { FastifyOAuth2Server } from "@/fastify-oauth-thing.js";
 
-export const oauth = new OAuth2Server({
+export const oauth = new FastifyOAuth2Server({
     model: {
         async getAccessToken(accessToken) {
             const token = await database
@@ -98,6 +99,12 @@ export const oauth = new OAuth2Server({
                 .executeTakeFirstOrThrow();
 
             return token;
+        },
+    },
+    authenticateHandler: {
+        handle: (req: FastifyRequest, reply: FastifyReply) => {
+            console.log(req);
+            return req.user;
         },
     },
 });

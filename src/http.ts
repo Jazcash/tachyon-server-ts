@@ -4,7 +4,7 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyMiddie from "@fastify/middie";
 import fastifySession from "@fastify/session";
 import { fastifyView } from "@fastify/view";
-import { User } from "@node-oauth/oauth2-server";
+import OAuth2Server, { User } from "@node-oauth/oauth2-server";
 import chalk from "chalk";
 import Fastify from "fastify";
 import handlebars from "handlebars";
@@ -45,7 +45,13 @@ await fastify.register(authRoutes);
 
 declare module "fastify" {
     export interface FastifyRequest {
-        user: User;
+        user?: User;
+    }
+    export interface FastifyReply {
+        oauth?: {
+            token?: OAuth2Server.Token;
+            code?: OAuth2Server.AuthorizationCode;
+        };
     }
 }
 
