@@ -3,10 +3,8 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 
-import { setConfig } from "@/config.js";
-import { startHttpServer, stopHttpServer } from "@/http.js";
-import { Config } from "@/model/config.js";
-import { TachyonServer } from "@/server.js";
+import { startHttpServer } from "@/http.js";
+import { startWssServer } from "@/wss.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -47,20 +45,4 @@ for (const serviceDir of serviceDirs) {
     }
 }
 
-let server: TachyonServer;
-
-export async function startServer(configToSet?: Config) {
-    if (configToSet) {
-        await setConfig(configToSet);
-    }
-
-    server = new TachyonServer();
-
-    await Promise.all([server.ready(), startHttpServer()]);
-
-    return server;
-}
-
-export async function stopServer() {
-    return Promise.all([server.destroy(), stopHttpServer()]);
-}
+await Promise.all([startHttpServer(), startWssServer()]);

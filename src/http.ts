@@ -4,7 +4,6 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyMiddie from "@fastify/middie";
 import fastifySession from "@fastify/session";
 import { fastifyView } from "@fastify/view";
-import OAuth2Server, { User } from "@node-oauth/oauth2-server";
 import chalk from "chalk";
 import Fastify from "fastify";
 import handlebars from "handlebars";
@@ -12,7 +11,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
 import { config } from "@/config.js";
-import { authRoutes } from "@/routes/auth.js";
+import { getSignSecret } from "@/utils/get-sign-secret.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,12 +25,12 @@ fastify.setErrorHandler((err, req, reply) => {
 });
 
 await fastify.register(fastifyCookie);
-await fastify.register(fastifySession, { secret: "a secret with minimum length of 32 characters" }); // TODO: generate secret
+await fastify.register(fastifySession, { secret: await getSignSecret() });
 await fastify.register(fastifyMiddie);
 await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, {
     engine: { handlebars },
-    root: path.join(__dirname, "./views2"),
+    root: path.join(__dirname, "./views"),
     options: {
         partials: {
             layout: "layout.hbs",
@@ -40,32 +39,14 @@ await fastify.register(fastifyView, {
 });
 await fastify.register(fastifyHelmet, { enableCSPNonces: true });
 
-// routes
-await fastify.register(authRoutes);
-
-declare module "fastify" {
-    export interface FastifyRequest {
-        user?: User;
-    }
-    export interface FastifyReply {
-        oauth?: {
-            token?: OAuth2Server.Token;
-            code?: OAuth2Server.AuthorizationCode;
-        };
-    }
-}
-
-fastify.decorateRequest("user", null);
-
 fastify.get("/", async (request, reply) => {
-    reply.send("I am a Tachyon Server!");
+    reply.view("home");
 });
 
 export async function startHttpServer() {
     try {
         await fastify.listen({ port: config.port });
         console.log(chalk.green(`Tachyon HTTP API listening on http://127.0.0.1:${config.port}`));
-        //console.log(chalk.green(`OAuth Discovery: http://127.0.0.1:${config.port}/.well-known/openid-configuration`));
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);

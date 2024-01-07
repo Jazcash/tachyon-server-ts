@@ -1,8 +1,8 @@
 import { Selectable } from "kysely";
 
-export type SettingsTable = {
+export type SettingTable = {
     key: string;
-    value: unknown;
+    value: string;
 };
 
-export type Settings = Selectable<SettingsTable>;
+export type SettingRow = Selectable<SettingTable>;

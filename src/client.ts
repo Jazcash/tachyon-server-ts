@@ -1,60 +1,16 @@
-import { IncomingMessage } from "http";
 import { RemoveField } from "jaz-ts-utils";
-import { Socket } from "net";
-import type { ResponseEndpointId, ResponseType, ServiceId, SystemVersionResponse } from "tachyon-protocol";
-import { tachyonMeta } from "tachyon-protocol";
+import type { ResponseEndpointId, ResponseType, ServiceId } from "tachyon-protocol";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
 import { handlers } from "@/handlers.js";
-import { UserRow } from "@/model/user.js";
 import { validators } from "@/validators.js";
 
-type SystemVersionResponseData = (SystemVersionResponse & { status: "success" })["data"];
-
 export class Client {
-    public user?: UserRow;
-    public ws: WebSocket;
-    public socket: Socket;
+    protected ws: WebSocket;
 
-    constructor(ws: WebSocket, connectionMessage: IncomingMessage) {
+    constructor(ws: WebSocket) {
         this.ws = ws;
-        this.socket = connectionMessage.socket;
-
-        const url = new URL(connectionMessage.url!, `http://${connectionMessage.headers.host}`);
-        const clientTachyonVersion = url.searchParams.get("tachyonVersion");
-
-        if (clientTachyonVersion !== tachyonMeta.version) {
-            let versionParity: SystemVersionResponseData["versionParity"] = "unknown"; // TODO: make type helper for this sort of thing
-            if (clientTachyonVersion) {
-                const [clientMajor, clientMinor, clientPatch] = clientTachyonVersion.split(".");
-                const [serverMajor, serverMinor, serverPatch] = tachyonMeta.version.split(".");
-
-                if (clientMajor !== serverMajor) {
-                    versionParity = "major_mismatch";
-                } else if (clientMinor !== serverMinor) {
-                    versionParity = "minor_mismatch";
-                } else if (clientPatch !== serverPatch) {
-                    versionParity = "patch_mismatch";
-                }
-            }
-
-            this.sendResponse("system", "version", {
-                status: "success",
-                data: {
-                    tachyonVersion: tachyonMeta.version as SystemVersionResponseData["tachyonVersion"],
-                    versionParity,
-                },
-            });
-        } else {
-            this.sendResponse("system", "version", {
-                status: "success",
-                data: {
-                    tachyonVersion: tachyonMeta.version as SystemVersionResponseData["tachyonVersion"],
-                    versionParity: "match",
-                },
-            });
-        }
 
         this.ws.on("message", (data) => this.handleRequest(data));
     }

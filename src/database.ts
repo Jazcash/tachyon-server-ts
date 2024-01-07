@@ -1,12 +1,8 @@
 import Database from "better-sqlite3";
-import { randomBytes } from "crypto";
 import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/database.js";
-import { hashPassword } from "@/utils/hash-password.js";
-
-const serializePlugin = new SerializePlugin();
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?$/;
 
@@ -52,22 +48,17 @@ function skipTransform(parameter: unknown) {
 }
 
 await database.schema
-    .createTable("settings")
+    .createTable("setting")
     .ifNotExists()
     .addColumn("key", "text", (col) => col.primaryKey())
-    .addColumn("value", "blob", (col) => col.notNull().unique())
+    .addColumn("value", "text", (col) => col.notNull())
     .execute();
 
 await database.schema
-    .createTable("user")
+    .createTable("account")
     .ifNotExists()
-    .addColumn("userId", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("email", "text", (col) => col.unique().defaultTo(null))
-    .addColumn("hashedPassword", "text", (col) => col.defaultTo(null))
-    .addColumn("steamId", "text", (col) => col.unique().defaultTo(null))
-    .addColumn("googleId", "text", (col) => col.unique().defaultTo(null))
-    .addColumn("displayName", "text", (col) => col.notNull())
-    .addColumn("verified", "boolean", (col) => col.notNull().defaultTo(false))
+    .addColumn("accountId", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("steamId", "text", (col) => col.notNull().unique())
     .addColumn("clanId", "integer", (col) => col.defaultTo(null))
     .addColumn("icons", "json", (col) => col.notNull().defaultTo("{}"))
     .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
@@ -75,54 +66,3 @@ await database.schema
     .addColumn("friendRequests", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("ignores", "json", (col) => col.notNull().defaultTo("[]"))
     .execute();
-
-await database.schema
-    .createTable("oauthTokens")
-    .ifNotExists()
-    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("userId", "integer", (col) => col.notNull())
-    .addColumn("clientId", "text", (col) => col.notNull())
-    .addColumn("accessToken", "text", (col) => col.notNull())
-    .addColumn("accessTokenExpiry", "datetime", (col) => col.notNull())
-    .addColumn("refreshToken", "text", (col) => col.notNull())
-    .addColumn("refreshTokenExpiry", "datetime", (col) => col.notNull())
-    .execute();
-
-await database
-    .insertInto("user")
-    .values({
-        email: "test@tachyontest.com",
-        hashedPassword: await hashPassword("fish"),
-        displayName: "Player",
-        verified: true,
-    })
-    .onConflict((oc) => oc.doNothing())
-    .execute();
-
-let signSecret = "";
-export async function getSignSecret() {
-    if (signSecret) {
-        return signSecret;
-    }
-
-    const storedSecret = await database
-        .selectFrom("settings")
-        .where("key", "=", "signSecret")
-        .select("value")
-        .executeTakeFirst();
-    if (storedSecret) {
-        signSecret = String(storedSecret.value);
-    } else {
-        signSecret = randomBytes(48).toString("hex");
-
-        await database
-            .insertInto("settings")
-            .values({
-                key: "signSecret",
-                value: signSecret,
-            })
-            .execute();
-    }
-
-    return signSecret;
-}
