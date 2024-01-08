@@ -1,5 +1,5 @@
 import { database } from "@/database.js";
-import { AccountRow, InsertableAccountRow } from "@/model/account.js";
+import { AccountRow, InsertableAccountRow } from "@/model/db/account.js";
 
 export class AccountService {
     public async createOrGetAccount(data: InsertableAccountRow): Promise<AccountRow> {
@@ -22,6 +22,25 @@ export class AccountService {
 
     public async getAccountBySteamId(steamId: string) {
         return database.selectFrom("account").where("steamId", "=", steamId).selectAll().executeTakeFirst();
+    }
+
+    public async updateRow<K extends keyof AccountRow & string, V extends AccountRow[K]>(
+        accountId: number,
+        key: K,
+        value: V
+    ) {
+        try {
+            return await database
+                .updateTable("account")
+                .where("accountId", "=", accountId)
+                .set({
+                    [key]: value,
+                })
+                .executeTakeFirstOrThrow();
+        } catch (err) {
+            console.error(`Error updating account row with accountId ${accountId}: ${key} = ${value}`);
+            console.error(err);
+        }
     }
 }
 

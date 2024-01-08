@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
-import { DatabaseModel } from "@/model/database.js";
+import { DatabaseModel } from "@/model/db/database.js";
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?$/;
 

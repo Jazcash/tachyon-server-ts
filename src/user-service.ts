@@ -1,19 +1,27 @@
 import { WebSocket } from "ws";
 
 import { Client } from "@/client.js";
-import { User, UserConfig } from "@/user.js";
+import { AccountRow } from "@/model/db/account.js";
+import { User } from "@/model/user.js";
 
 export class UserService {
     protected users: Map<number, User> = new Map();
 
-    public addUser(socket: WebSocket, config: UserConfig): User {
-        const client = new Client(socket);
-        const user = new User(client, config);
+    public addUser(socket: WebSocket, account: AccountRow): User {
+        const existingUser = this.users.get(account.accountId);
+        if (existingUser) {
+            return existingUser;
+        }
 
-        this.users.set(config.accountId, user);
+        const user: User = {
+            client: new Client(socket),
+            account,
+        };
+
+        this.users.set(user.account.accountId, user);
 
         socket.addEventListener("close", () => {
-            this.users.delete(config.accountId);
+            this.users.delete(user.account.accountId);
         });
 
         return user;

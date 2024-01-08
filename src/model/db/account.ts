@@ -3,9 +3,13 @@ import { Generated, GeneratedAlways, Insertable, Selectable, Updateable } from "
 export type AccountTable = {
     accountId: GeneratedAlways<number>;
     steamId: string;
-    friends: Generated<number[]>;
-    friendRequests: Generated<number[]>;
-    ignores: Generated<number[]>;
+    displayName: string;
+    avatarUrl: string;
+    countryCode?: string;
+    // friends: Generated<number[]>;
+    // outgoingFriendRequestIds: Generated<number[]>;
+    // incomiingFriendRequestIds: Generated<number[]>;
+    // ignoreIds: Generated<number[]>;
     roles: Generated<string[]>;
     clanId: number | null;
     createdAt: Generated<Date>;
