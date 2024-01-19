@@ -2,10 +2,10 @@ import chalk from "chalk";
 import { tachyonMeta } from "tachyon-protocol";
 import { WebSocketServer } from "ws";
 
-import { accountService } from "@/account-service.js";
 import { config } from "@/config.js";
 import { fastify } from "@/http.js";
 import { authenticateSteamTicket, getSteamPlayerSummaries } from "@/steam.js";
+import { userClientService } from "@/user-client-service.js";
 import { userService } from "@/user-service.js";
 
 export const wss = new WebSocketServer({
@@ -30,16 +30,26 @@ wss.addListener("connection", async (socket, request) => {
         return;
     }
 
-    const account = await accountService.createOrGetAccount({ steamId: steamAuthResult.steamId });
-
     const steamInfo = await getSteamPlayerSummaries(steamAuthResult.steamId);
 
-    userService.addUser(socket, {
-        accountId: account.accountId,
-        displayName: steamInfo.personaname,
-        avatarUrl: steamInfo.avatar,
-        countryCode: steamInfo.loccountrycode,
-    });
+    let user = await userService.getUserBySteamId(steamAuthResult.steamId);
+
+    if (user) {
+        await userService.updateUser(user.userId, {
+            displayName: steamInfo.personaname,
+            avatarUrl: steamInfo.avatar,
+            countryCode: steamInfo.loccountrycode,
+        });
+    } else {
+        user = await userService.createUser({
+            steamId: steamAuthResult.steamId,
+            displayName: steamInfo.personaname,
+            avatarUrl: steamInfo.avatar,
+            countryCode: steamInfo.loccountrycode,
+        });
+    }
+
+    userClientService.addUserClient(socket, user);
 });
 
 export function startWssServer() {

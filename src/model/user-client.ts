@@ -4,15 +4,89 @@ import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
 import { handlers } from "@/handlers.js";
+import { UserRow } from "@/model/db/user.js";
+import { userService } from "@/user-service.js";
 import { validators } from "@/validators.js";
 
-export class Client {
-    protected ws: WebSocket;
+export class UserClient implements UserRow {
+    protected socket: WebSocket;
+    protected data: UserRow;
 
-    constructor(ws: WebSocket) {
-        this.ws = ws;
+    constructor(socket: WebSocket, data: UserRow) {
+        this.socket = socket;
+        this.data = data;
 
-        this.ws.on("message", (data) => this.handleRequest(data));
+        this.socket.on("message", (data) => this.handleRequest(data));
+    }
+
+    public get userId() {
+        return this.data.userId;
+    }
+
+    public get steamId() {
+        return this.data.steamId;
+    }
+
+    public get displayName() {
+        return this.data.displayName;
+    }
+
+    public get avatarUrl() {
+        return this.data.avatarUrl;
+    }
+
+    public get countryCode() {
+        return this.data.countryCode;
+    }
+
+    public get friendIds() {
+        return this.data.friendIds;
+    }
+    public get outgoingFriendRequestIds() {
+        return this.data.outgoingFriendRequestIds;
+    }
+
+    public get incomingFriendRequestIds() {
+        return this.data.incomingFriendRequestIds;
+    }
+
+    public get ignoreIds() {
+        return this.data.ignoreIds;
+    }
+
+    public get clanId() {
+        return this.data.clanId;
+    }
+
+    public get roles() {
+        return this.data.roles;
+    }
+
+    public get createdAt() {
+        return this.data.createdAt;
+    }
+
+    public get updatedAt() {
+        return this.data.updatedAt;
+    }
+
+    public async addFriend(userId: number) {
+        if (!this.data.friendIds.includes(userId)) {
+            this.data.friendIds.push(userId);
+            await userService.updateUserProperty(this.data.userId, "friendIds", this.data.friendIds);
+        }
+    }
+
+    public async removeFriend(userId: number) {
+        const index = this.data.friendIds.indexOf(userId);
+        if (index > -1) {
+            this.data.friendIds.splice(index, 1);
+            await userService.updateUserProperty(this.data.userId, "friendIds", this.data.friendIds);
+        }
+    }
+
+    public async addOutgoingFriendRequest(userId: number) {
+        //
     }
 
     public sendResponse<S extends ServiceId, E extends ResponseEndpointId<S>>(
@@ -42,7 +116,7 @@ export class Client {
             return;
         }
 
-        this.ws.send(JSON.stringify(response));
+        this.socket.send(JSON.stringify(response));
     }
 
     protected async handleRequest(message: Data) {

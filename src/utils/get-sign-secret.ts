@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { database } from "@/database.js";
-import { SettingRow } from "@/model/db/settings.js";
+import { SettingRow } from "@/model/db/setting.js";
 
 let signSecret: string | undefined;
 

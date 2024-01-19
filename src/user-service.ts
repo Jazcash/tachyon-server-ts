@@ -1,34 +1,42 @@
-import { WebSocket } from "ws";
-
-import { Client } from "@/client.js";
-import { AccountRow } from "@/model/db/account.js";
-import { User } from "@/model/user.js";
+import { database } from "@/database.js";
+import { InsertableUserRow, UpdateableUserRow, UserRow } from "@/model/db/user.js";
 
 export class UserService {
-    protected users: Map<number, User> = new Map();
-
-    public addUser(socket: WebSocket, account: AccountRow): User {
-        const existingUser = this.users.get(account.accountId);
-        if (existingUser) {
-            return existingUser;
-        }
-
-        const user: User = {
-            client: new Client(socket),
-            account,
-        };
-
-        this.users.set(user.account.accountId, user);
-
-        socket.addEventListener("close", () => {
-            this.users.delete(user.account.accountId);
-        });
-
-        return user;
+    public async createUser(data: InsertableUserRow): Promise<UserRow> {
+        return await database.insertInto("user").values(data).returningAll().executeTakeFirstOrThrow();
     }
 
-    public getUser(accountId: number): User | undefined {
-        return this.users.get(accountId);
+    public async getUserById(userId: number) {
+        return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirst();
+    }
+
+    public async getUserBySteamId(steamId: string) {
+        return database.selectFrom("user").where("steamId", "=", steamId).selectAll().executeTakeFirst();
+    }
+
+    public async updateUser(userId: number, values: UpdateableUserRow) {
+        await database
+            .updateTable("user")
+            .where("userId", "=", userId)
+            .set({ ...values, updatedAt: new Date() })
+            .execute();
+    }
+
+    public async updateUserProperty<K extends keyof UpdateableUserRow & string>(
+        userId: number,
+        property: K,
+        value: UserRow[K]
+    ) {
+        try {
+            await database
+                .updateTable("user")
+                .where("userId", "=", userId)
+                .set({ [property]: value, updatedAt: new Date() })
+                .execute();
+        } catch (err) {
+            console.error(`Error updating user row with userId ${userId}: ${property} = ${value}`);
+            console.error(err);
+        }
     }
 }
 

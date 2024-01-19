@@ -47,22 +47,31 @@ function skipTransform(parameter: unknown) {
     );
 }
 
+/**
+ * Make sure to also update the models in model/db when making changes to the schemas below
+ */
+
 await database.schema
     .createTable("setting")
     .ifNotExists()
-    .addColumn("key", "text", (col) => col.primaryKey())
+    .addColumn("key", "text", (col) => col.notNull().primaryKey())
     .addColumn("value", "text", (col) => col.notNull())
     .execute();
 
 await database.schema
-    .createTable("account")
+    .createTable("user")
     .ifNotExists()
-    .addColumn("accountId", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("userId", "integer", (col) => col.notNull().primaryKey().autoIncrement())
     .addColumn("steamId", "text", (col) => col.notNull().unique())
+    .addColumn("displayName", "text", (col) => col.notNull())
+    .addColumn("avatarUrl", "text", (col) => col.notNull())
+    .addColumn("countryCode", "text")
     .addColumn("clanId", "integer", (col) => col.defaultTo(null))
-    .addColumn("icons", "json", (col) => col.notNull().defaultTo("{}"))
+    .addColumn("friendIds", "json", (col) => col.notNull().defaultTo("[]"))
+    .addColumn("outgoingFriendRequestIds", "json", (col) => col.notNull().defaultTo("[]"))
+    .addColumn("incomingFriendRequestIds", "json", (col) => col.notNull().defaultTo("[]"))
+    .addColumn("ignoreIds", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
-    .addColumn("friends", "json", (col) => col.notNull().defaultTo("[]"))
-    .addColumn("friendRequests", "json", (col) => col.notNull().defaultTo("[]"))
-    .addColumn("ignores", "json", (col) => col.notNull().defaultTo("[]"))
+    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .execute();

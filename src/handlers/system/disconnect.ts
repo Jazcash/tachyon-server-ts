@@ -5,5 +5,5 @@ export default defineHandler("system", "disconnect", async (options, data) => {
         status: "success",
     });
 
-    options.client.ws.close();
+    options.client.socket.close();
 });

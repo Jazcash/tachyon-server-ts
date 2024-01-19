@@ -1,7 +1,7 @@
-import { AccountTable } from "@/model/db/account.js";
-import { SettingTable } from "@/model/db/settings.js";
+import { SettingTable } from "@/model/db/setting.js";
+import { UserTable } from "@/model/db/user.js";
 
 export type DatabaseModel = {
     setting: SettingTable;
-    account: AccountTable;
+    user: UserTable;
 };
