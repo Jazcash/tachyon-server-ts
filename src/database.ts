@@ -3,8 +3,7 @@ import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/db/database.js";
-
-const dateRegex = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?$/;
+import { hashPassword } from "@/utils/hash-password.js";
 
 export const database = new Kysely<DatabaseModel>({
     dialect: new SqliteDialect({
@@ -20,7 +19,7 @@ export const database = new Kysely<DatabaseModel>({
                 if (typeof parameter === "string") {
                     if (/^(true|false)$/.test(parameter)) {
                         return parameter === "true";
-                    } else if (dateRegex.test(parameter)) {
+                    } else if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?$/.test(parameter)) {
                         return new Date(parameter);
                     } else if (parameter.match(/^[[{]/) != null) {
                         try {
@@ -47,10 +46,6 @@ function skipTransform(parameter: unknown) {
     );
 }
 
-/**
- * Make sure to also update the models in model/db when making changes to the schemas below
- */
-
 await database.schema
     .createTable("setting")
     .ifNotExists()
@@ -62,10 +57,14 @@ await database.schema
     .createTable("user")
     .ifNotExists()
     .addColumn("userId", "integer", (col) => col.notNull().primaryKey().autoIncrement())
-    .addColumn("steamId", "text", (col) => col.notNull().unique())
+    //.addColumn("username", "text", (col) => col.unique().notNull())
+    .addColumn("email", "text", (col) => col.unique())
+    .addColumn("hashedPassword", "text")
+    .addColumn("googleId", "text", (col) => col.unique())
+    .addColumn("steamId", "text", (col) => col.unique())
     .addColumn("displayName", "text", (col) => col.notNull())
-    .addColumn("avatarUrl", "text", (col) => col.notNull())
-    .addColumn("countryCode", "text")
+    // .addColumn("avatarUrl", "text", (col) => col.notNull())
+    //.addColumn("countryCode", "text")
     .addColumn("clanId", "integer", (col) => col.defaultTo(null))
     .addColumn("friendIds", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("outgoingFriendRequestIds", "json", (col) => col.notNull().defaultTo("[]"))
@@ -74,4 +73,52 @@ await database.schema
     .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .execute();
+
+await database.schema
+    .createTable("authCode")
+    .ifNotExists()
+    .addColumn("code", "text", (col) => col.notNull().primaryKey())
+    .addColumn("redirectUri", "text")
+    .addColumn("codeChallenge", "text")
+    .addColumn("codeChallengeMethod", "text", (col) => col.defaultTo("plain"))
+    .addColumn("expiresAt", "datetime", (col) => col.notNull())
+    .addColumn("userId", "integer")
+    .addColumn("clientId", "text", (col) => col.notNull())
+    .addColumn("scopes", "json", (col) => col.notNull())
+    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .execute();
+
+await database.schema
+    .createTable("token")
+    .ifNotExists()
+    .addColumn("accessToken", "text", (col) => col.notNull().primaryKey())
+    .addColumn("accessTokenExpiresAt", "datetime", (col) => col.notNull())
+    .addColumn("refreshToken", "text", (col) => col.unique())
+    .addColumn("refreshTokenExpiresAt", "datetime")
+    .addColumn("clientId", "text", (col) => col.notNull())
+    .addColumn("userId", "integer", (col) => col.notNull())
+    .addColumn("scopes", "json", (col) => col.notNull())
+    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .execute();
+
+await database.schema
+    .createTable("session")
+    .ifNotExists()
+    .addColumn("sessionId", "varchar", (col) => col.notNull().primaryKey())
+    .addColumn("userId", "integer")
+    .execute();
+
+await database
+    .insertInto("user")
+    .values({
+        email: "test@tachyontest.com",
+        //username: "dummy",
+        hashedPassword: await hashPassword("fish"),
+        //avatarUrl: "not_yet",
+        displayName: "Dummy User",
+    })
+    .onConflict((oc) => oc.doNothing())
     .execute();

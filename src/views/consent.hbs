@@ -1,0 +1,20 @@
+{{#> layout title="Consent"}}
+
+{{#*inline "body"}}
+<div>
+    <p>{{ user.name }}</p>
+    <p>Do you authorize {{ client.name }} the following scopes:</p>
+    <ul>
+        {{#each scopes}}
+            <li>{{ name }}</li>
+        {{/each}}
+    </ul>
+    <form action="#" method="POST">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <button type="submit" name="action" value="yes">Yes</button>
+        <button type="submit" name="action" value="no">No</button>
+    </form>
+</div>
+{{/inline}}
+
+{{/layout}}

@@ -6,11 +6,11 @@ export class UserService {
         return await database.insertInto("user").values(data).returningAll().executeTakeFirstOrThrow();
     }
 
-    public async getUserById(userId: number) {
-        return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirst();
+    public async getUserById(userId: number): Promise<UserRow> {
+        return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirstOrThrow();
     }
 
-    public async getUserBySteamId(steamId: string) {
+    public async getUserBySteamId(steamId: string): Promise<UserRow | undefined> {
         return database.selectFrom("user").where("steamId", "=", steamId).selectAll().executeTakeFirst();
     }
 
@@ -19,20 +19,16 @@ export class UserService {
             .updateTable("user")
             .where("userId", "=", userId)
             .set({ ...values, updatedAt: new Date() })
-            .execute();
+            .executeTakeFirstOrThrow();
     }
 
-    public async updateUserProperty<K extends keyof UpdateableUserRow & string>(
-        userId: number,
-        property: K,
-        value: UserRow[K]
-    ) {
+    public async updateUserProperty<K extends keyof UpdateableUserRow & string>(userId: number, property: K, value: UserRow[K]) {
         try {
             await database
                 .updateTable("user")
                 .where("userId", "=", userId)
                 .set({ [property]: value, updatedAt: new Date() })
-                .execute();
+                .executeTakeFirstOrThrow();
         } catch (err) {
             console.error(`Error updating user row with userId ${userId}: ${property} = ${value}`);
             console.error(err);

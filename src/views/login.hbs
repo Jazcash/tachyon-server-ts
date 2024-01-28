@@ -1,0 +1,39 @@
+{{#> layout title="Login"}}
+
+{{#*inline "body"}}
+<form autocomplete="off" action="#" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+    <div>
+        <label>
+            Email
+            <input type="email" name="email" value="test@tachyontest.com" required>
+        </label>
+    </div>
+
+    <div>
+        <label>
+            Password
+            <input type="password" name="password" value="fish" required>
+        </label>
+    </div>
+
+    <div>
+        <button type="submit">Login</button>
+    </div>
+
+    <div>
+        <a href="#">Forgot Your Password?</a>
+    </div>
+</form>
+
+<div>
+    <a href="/login/google">Sign in with Google</a>
+</div>
+
+<div>
+<a href="/login/steam">Sign in with Steam</a>
+</div>
+{{/inline}}
+
+{{/layout}}

@@ -4,7 +4,7 @@ import path, { dirname } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 
 import { startHttpServer } from "@/http.js";
-import { startWssServer } from "@/wss.js";
+import { startWssServer } from "@/websocket-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,13 +33,8 @@ const serviceDirs = schemaDirs.filter((entry) => entry.isDirectory()).map((entry
 for (const serviceDir of serviceDirs) {
     const endpointDirs = await fs.promises.readdir(`./node_modules/tachyon-protocol/dist/${serviceDir}`);
     for (const endpointDir of endpointDirs) {
-        const hasRequestSchema = fs.existsSync(
-            `./node_modules/tachyon-protocol/dist/${serviceDir}/${endpointDir}/request.json`
-        );
-        if (
-            hasRequestSchema &&
-            (!registeredHandlers[serviceDir] || !registeredHandlers[serviceDir].includes(endpointDir))
-        ) {
+        const hasRequestSchema = fs.existsSync(`./node_modules/tachyon-protocol/dist/${serviceDir}/${endpointDir}/request.json`);
+        if (hasRequestSchema && (!registeredHandlers[serviceDir] || !registeredHandlers[serviceDir].includes(endpointDir))) {
             console.warn(chalk.yellow(`No endpoint handler defined for ${serviceDir}/${endpointDir}`));
         }
     }

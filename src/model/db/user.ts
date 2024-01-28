@@ -2,10 +2,13 @@ import { Generated, GeneratedAlways, Insertable, Selectable, Updateable } from "
 
 export type UserTable = {
     userId: GeneratedAlways<number>;
-    steamId: string;
+    //username: string;
+    email?: string;
+    hashedPassword?: string;
+    steamId?: string;
+    googleId?: string;
     displayName: string;
-    avatarUrl: string;
-    countryCode?: string;
+    //avatarUrl: string;
     friendIds: Generated<number[]>;
     outgoingFriendRequestIds: Generated<number[]>;
     incomingFriendRequestIds: Generated<number[]>;

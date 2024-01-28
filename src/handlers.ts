@@ -2,8 +2,8 @@ import { RemoveField } from "jaz-ts-utils";
 import { Kysely } from "kysely";
 import type { GetCommands, RequestEndpointId, ServiceId } from "tachyon-protocol";
 
-import { UserClient } from "@/model/user-client.js";
 import { DatabaseModel } from "@/model/db/database.js";
+import { UserClient } from "@/model/user-client.js";
 
 type HandlerArgs = {
     client: UserClient;
@@ -18,7 +18,7 @@ export function defineHandler<
     T extends GetCommands<S, E>,
     ReqData extends T extends { request: { data: infer Req } } ? Req : object,
     ResData extends T extends { response: infer Res } ? RemoveField<Res, "command"> : void,
-    CB extends (args: HandlerArgs, data: ReqData) => Promise<ResData>
+    CB extends (args: HandlerArgs, data: ReqData) => Promise<ResData>,
 >(serviceId: S, endpointId: E, callback: CB) {
     handlers.set(`${serviceId}/${endpointId}`, callback);
 }

@@ -1,0 +1,48 @@
+{{#> layout title="Register"}}
+
+{{#*inline "body"}}
+<div>
+    <p>We need some information to complete your account registration:</p>
+
+    <form action="#" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{#if collectEmail}}
+        <div>
+            <label>
+                Email
+                <input type="email" name="email" value="test@tachyontest.com" required>
+            </label>
+            {{#if emailError}}
+                <p>{{ emailError }}</p>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        {{!-- <div>
+            <input type="text" name="username">
+            {{#if usernameError}}
+            <p>{{ usernameError }}</p>
+            {{/if}}
+        </div> --}}
+
+        {{#if collectPassword}}
+        <div>
+            <label>
+                Password
+                <input type="password" name="password" value="fish" required>
+            </label>
+            {{#if passwordError}}
+                <p>{{ passwordError }}</p>
+            {{/if}}
+        </div>
+        {{/if}}
+        
+        <div>
+            <button type="submit">Register</button>
+        </div>
+    </form>
+</div>
+{{/inline}}
+
+{{/layout}}

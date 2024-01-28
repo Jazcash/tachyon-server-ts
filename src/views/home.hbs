@@ -1,7 +1,16 @@
 {{#> layout title="Tachyon Server"}}
 
 {{#*inline "body"}}
-I am a Tachyon Server written in TypeScript!
+
+{{#if user}}
+    <div>You are logged in as {{ user.userId }}!</div>
+    <a href="/logout">Logout</a>
+{{else}}
+    <div>
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+    </div>
+{{/if}}
 {{/inline}}
 
 {{/layout}}

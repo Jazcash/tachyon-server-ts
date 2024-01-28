@@ -10,13 +10,13 @@ module.exports = {
         sourceType: "module",
     },
     plugins: ["import", "node"],
-    rules: {
-        // Rules should only be added here for testing temporarily and should eventually be moved into jaz-ts-utils to ensure consistency across projects
-        "import/extensions": ["error", "ignorePackages"]
-    },
     settings: {
         "import/parsers": {
             "@typescript-eslint/parser": [".ts"],
         },
+    },
+    rules: {
+        // Rules should only be added here for testing temporarily and should eventually be moved into jaz-ts-utils to ensure consistency across projects
+        "import/extensions": ["error", "ignorePackages"],
     },
 };
