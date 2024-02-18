@@ -1,7 +1,8 @@
 import { fastifyCookie } from "@fastify/cookie";
 import { fastifyCsrfProtection } from "@fastify/csrf-protection";
-import { fastifyFormbody } from "@fastify/formbody";
+import fastifyFormbody from "@fastify/formbody";
 import { fastifyHelmet } from "@fastify/helmet";
+import fastifyMultipart from "@fastify/multipart";
 import { fastifyOauth2, OAuth2Namespace } from "@fastify/oauth2";
 import { fastifySession } from "@fastify/session";
 import { fastifyView } from "@fastify/view";
@@ -28,6 +29,8 @@ declare module "fastify" {
     }
     interface Session {
         auth?: AuthorizationRequest;
+        googleId?: string;
+        steamId?: string;
         user?: UserRow;
     }
 }
@@ -45,9 +48,10 @@ fastify.setErrorHandler((err, req, reply) => {
 });
 
 await fastify.register(fastifyCookie, { secret: await getSignSecret() });
-await fastify.register(fastifySession, { secret: await getSignSecret(), cookie: { secure: false }, store: dbSessionStore, saveUninitialized: false }); // TODO: use fastifySecureSession instead? secure cookie should be true for https
+await fastify.register(fastifySession, { secret: await getSignSecret(), cookie: { secure: false }, store: dbSessionStore }); // TODO: use fastifySecureSession instead? secure cookie should be true for https
 await fastify.register(fastifyHelmet, { enableCSPNonces: true });
-await fastify.register(fastifyCsrfProtection, { cookieOpts: { signed: true } }); // TODO: make this work
+await fastify.register(fastifyCsrfProtection, { cookieOpts: { signed: true } });
+await fastify.register(fastifyMultipart, { attachFieldsToBody: true });
 await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, {
     engine: { handlebars },
@@ -58,18 +62,22 @@ await fastify.register(fastifyView, {
         },
     },
 });
+
+/** @ts-expect-error https://github.com/fastify/fastify-oauth2/issues/249 */
 fastify.register(fastifyOauth2, {
     name: "googleOAuth2",
-    scope: ["tachyon.lobby"],
+    scope: ["openid"],
     credentials: {
         client: {
             id: config.googleClientId,
             secret: config.googleClientSecret,
         },
-        auth: fastifyOauth2.GOOGLE_CONFIGURATION,
     },
     startRedirectPath: "/login/google",
     callbackUri: "http://127.0.0.1:3005/login/google/callback",
+    discovery: {
+        issuer: "https://accounts.google.com",
+    },
 });
 
 await fastify.register(homeRoute);

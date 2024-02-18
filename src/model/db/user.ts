@@ -2,7 +2,7 @@ import { Generated, GeneratedAlways, Insertable, Selectable, Updateable } from "
 
 export type UserTable = {
     userId: GeneratedAlways<number>;
-    //username: string;
+    username: string;
     email?: string;
     hashedPassword?: string;
     steamId?: string;

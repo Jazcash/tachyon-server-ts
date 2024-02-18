@@ -3,14 +3,10 @@
 {{#*inline "body"}}
 
 {{#if user}}
-    <div>You are logged in as {{ user.userId }}!</div>
+    <div>You are logged in as {{ user.username }}</div>
     <a href="/logout">Logout</a>
-{{else}}
-    <div>
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-    </div>
 {{/if}}
+
 {{/inline}}
 
 {{/layout}}

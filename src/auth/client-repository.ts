@@ -6,7 +6,7 @@ export const oauthClients: OAuthClient[] = [
         secret: null,
         name: "Tachyon Client",
         allowedGrants: ["authorization_code", "refresh_token"],
-        redirectUris: ["http://127.0.0.1:3006/oauth2callback"],
+        redirectUris: ["http://127.0.0.1/oauth2callback"],
         scopes: [{ name: "tachyon.lobby" }],
     },
 ];

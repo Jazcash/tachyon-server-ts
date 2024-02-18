@@ -3,7 +3,6 @@ import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/db/database.js";
-import { hashPassword } from "@/utils/hash-password.js";
 
 export const database = new Kysely<DatabaseModel>({
     dialect: new SqliteDialect({
@@ -57,7 +56,7 @@ await database.schema
     .createTable("user")
     .ifNotExists()
     .addColumn("userId", "integer", (col) => col.notNull().primaryKey().autoIncrement())
-    //.addColumn("username", "text", (col) => col.unique().notNull())
+    .addColumn("username", "text", (col) => col.unique().notNull())
     .addColumn("email", "text", (col) => col.unique())
     .addColumn("hashedPassword", "text")
     .addColumn("googleId", "text", (col) => col.unique())
@@ -109,16 +108,19 @@ await database.schema
     .ifNotExists()
     .addColumn("sessionId", "varchar", (col) => col.notNull().primaryKey())
     .addColumn("userId", "integer")
+    .addColumn("googleId", "varchar")
+    .addColumn("steamId", "varchar")
+    .addColumn("auth", "json")
     .execute();
 
-await database
-    .insertInto("user")
-    .values({
-        email: "test@tachyontest.com",
-        //username: "dummy",
-        hashedPassword: await hashPassword("fish"),
-        //avatarUrl: "not_yet",
-        displayName: "Dummy User",
-    })
-    .onConflict((oc) => oc.doNothing())
-    .execute();
+// await database
+//     .insertInto("user")
+//     .values({
+//         email: "test@tachyontest.com",
+//         username: "dummy",
+//         hashedPassword: await hashPassword("fish"),
+//         //avatarUrl: "not_yet",
+//         displayName: "Dummy User",
+//     })
+//     .onConflict((oc) => oc.doNothing())
+//     .execute();

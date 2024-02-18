@@ -14,6 +14,10 @@ export class UserService {
         return database.selectFrom("user").where("steamId", "=", steamId).selectAll().executeTakeFirst();
     }
 
+    public async getUserByGoogleId(googleId: string): Promise<UserRow | undefined> {
+        return database.selectFrom("user").where("googleId", "=", googleId).selectAll().executeTakeFirst();
+    }
+
     public async updateUser(userId: number, values: UpdateableUserRow) {
         await database
             .updateTable("user")

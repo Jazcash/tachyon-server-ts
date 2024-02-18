@@ -4,8 +4,15 @@
 <div>
     <p>We need some information to complete your account registration:</p>
 
-    <form action="#" method="post">
+    <form id="form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        <div>
+            <label>
+                Username
+                <input type="text" name="username" value="dummy">
+            </label>
+        </div>
 
         {{#if collectEmail}}
         <div>
@@ -13,18 +20,8 @@
                 Email
                 <input type="email" name="email" value="test@tachyontest.com" required>
             </label>
-            {{#if emailError}}
-                <p>{{ emailError }}</p>
-            {{/if}}
         </div>
         {{/if}}
-
-        {{!-- <div>
-            <input type="text" name="username">
-            {{#if usernameError}}
-            <p>{{ usernameError }}</p>
-            {{/if}}
-        </div> --}}
 
         {{#if collectPassword}}
         <div>
@@ -32,17 +29,87 @@
                 Password
                 <input type="password" name="password" value="fish" required>
             </label>
-            {{#if passwordError}}
-                <p>{{ passwordError }}</p>
-            {{/if}}
         </div>
         {{/if}}
+
+        <div id="error" class="error"></div>
         
         <div>
             <button type="submit">Register</button>
         </div>
     </form>
+
+    {{#if collectEmail}}
+        <div>
+            Or
+        </div>
+
+        <div>
+            <a href="/login/google">Register with Google</a>
+        </div>
+
+        <div>
+            <a href="/login/steam">Register with Steam</a>
+        </div>
+    {{/if}}
 </div>
+
+<script nonce="{{ nonce.script }}">
+const form = document.getElementById("form");
+
+for (const el of form.querySelectorAll("input, textarea, select")) {
+    el.addEventListener("input", () => {
+        el.setCustomValidity("");
+    });
+}
+
+form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(form);
+
+    const response = await fetch("/register", {
+        method: "POST",
+        body: new URLSearchParams(formData),
+    });
+
+    if (response.ok) {
+        window.location.href = "/";
+    } else {
+        const error = await response.text();
+
+        for (const el of form.querySelectorAll("input, textarea, select")) {
+            el.setCustomValidity("");
+        }
+
+        let msg = "";
+        if (error === "email_taken") {
+            msg = "Email is already in use.";
+            form.querySelector("[name=email]").setCustomValidity(msg);
+        } else if (error === "username_taken") {
+            msg = "Username is already in use.";
+            form.querySelector("[name=username]").setCustomValidity(msg);
+        } else if (error === "password_weak") {
+            msg = "Password not strong enough.";
+            form.querySelector("[name=password]").setCustomValidity(msg);
+        }
+
+        form.querySelector("#error").textContent = msg;
+        form.reportValidity();
+    }
+});
+</script>
+
+<style nonce="{{ nonce.style }}">
+input:invalid {
+    border: none;
+    outline: 2px solid red;
+    border-radius: 5px;
+}
+.error {
+    color: red;
+}
+</style>
 {{/inline}}
 
 {{/layout}}

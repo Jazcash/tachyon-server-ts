@@ -1,0 +1,8 @@
+{
+    "port": 3005,
+    "accountVerification": false,
+    "steamAppId": 480,
+    "steamWebApiKey": "DCDF2512E051CC260AB22D3F13C536F7",
+    "googleClientId": "1047182226627-sb70sggfiq4bukf7swr69e44el2lmql47.apps.googleusercontent.com ",
+    "googleClientSecret": "GCCSPX-XY6OcY2umc8b1Ub2eOvFpd3npx-W"
+}
