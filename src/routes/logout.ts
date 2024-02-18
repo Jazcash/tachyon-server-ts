@@ -10,7 +10,8 @@ export const logoutRoute: FastifyPluginAsync = async function (fastify, options)
         handler: async (req, reply) => {
             await req.session.destroy();
 
-            return reply.redirect("/");
+            reply.redirect("/");
+            return reply;
         },
     });
 };

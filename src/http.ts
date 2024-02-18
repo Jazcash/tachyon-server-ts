@@ -39,7 +39,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const fastify = Fastify({
     trustProxy: true,
-    //logger: true,
+    logger: {
+        level: "warn",
+        file: "fastify.log",
+    },
 });
 
 fastify.setErrorHandler((err, req, reply) => {

@@ -47,12 +47,14 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
                 req.session.user = user;
 
                 if (!req.session.auth) {
-                    return reply.redirect(`/`);
+                    reply.redirect(`/`);
+                    return reply;
                 }
 
                 req.session.auth.user = { id: user.userId };
 
-                return reply.redirect(`/authorize`);
+                reply.redirect(`/authorize`);
+                return reply;
             } catch (err) {
                 throw new Error("invalid_login");
             }
@@ -72,17 +74,20 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
             const user = await userService.getUserByGoogleId(userInfo.sub);
 
             if (!user) {
-                return reply.redirect("/register?strategy=google");
+                reply.redirect("/register?strategy=google");
+                return reply;
             } else {
                 req.session.user = user;
 
                 if (!req.session.auth) {
-                    return reply.redirect(`/`);
+                    reply.redirect(`/`);
+                    return reply;
                 }
 
                 req.session.auth.user = { id: user.userId };
 
-                return reply.redirect(`/authorize`);
+                reply.redirect(`/authorize`);
+                return reply;
             }
         },
     });
@@ -98,7 +103,8 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
         url: "/login/steam",
         handler: async (req, reply) => {
             const redirectUrl = await steam.getRedirectUrl();
-            return reply.redirect(redirectUrl);
+            reply.redirect(redirectUrl);
+            return reply;
         },
     });
 
@@ -113,17 +119,20 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
             const user = await userService.getUserBySteamId(userInfo.steamid);
 
             if (!user) {
-                return reply.redirect("/register?strategy=steam");
+                reply.redirect("/register?strategy=steam");
+                return reply;
             } else {
                 req.session.user = user;
 
                 if (!req.session.auth) {
-                    return reply.redirect(`/`);
+                    reply.redirect(`/`);
+                    return reply;
                 }
 
                 req.session.auth.user = { id: user.userId };
 
-                return reply.redirect(`/authorize`);
+                reply.redirect(`/authorize`);
+                return reply;
             }
         },
     });

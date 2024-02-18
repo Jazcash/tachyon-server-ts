@@ -44,3 +44,4 @@ thumbs.db
 debug.log
 database.db
 config.json
+fastify.log

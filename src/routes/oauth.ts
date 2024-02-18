@@ -19,21 +19,25 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                 }
 
                 if (!req.session.auth.user && !req.session.user) {
-                    return reply.redirect(`/login`);
+                    reply.redirect(`/login`);
+                    return reply;
                 } else if (!req.session.auth.user && req.session.user) {
                     req.session.auth.user = { id: req.session.user.userId };
                 }
 
                 if (!req.session.auth.isAuthorizationApproved) {
-                    return reply.redirect("/consent");
+                    reply.redirect("/consent");
+                    return reply;
                 }
 
                 const oauthResponse = await oauth.completeAuthorizationRequest(req.session.auth);
 
-                delete req.session.auth;
+                req.session.auth = undefined;
 
-                return handleFastifyReply(reply, oauthResponse);
+                handleFastifyReply(reply, oauthResponse);
+                return reply;
             } catch (e) {
+                console.log("ERRORRRR");
                 handleFastifyError(e, reply);
             }
         },
@@ -47,12 +51,13 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                 throw new Error("Missing auth params");
             }
 
-            return reply.view("consent", {
+            reply.view("consent", {
                 csrfToken: reply.generateCsrf(),
                 user: req.session.auth.user,
                 client: req.session.auth.client,
                 scopes: req.session.auth.scopes,
             });
+            return reply;
         },
     });
 
@@ -67,11 +72,12 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
             req.session.auth.isAuthorizationApproved = req.body.action === "yes";
 
             if (!req.session.auth.isAuthorizationApproved) {
-                delete req.session.auth;
-                return reply.send("Auth abandoned");
+                req.session.auth = undefined;
+                return "Auth abandoned";
             }
 
-            return reply.redirect("/authorize");
+            reply.redirect("/authorize");
+            return reply;
         },
     });
 
@@ -82,9 +88,10 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
             try {
                 const request = requestFromFastify(req);
                 const oauthResponse = await oauth.respondToAccessTokenRequest(request);
-                return handleFastifyReply(reply, oauthResponse);
+                handleFastifyReply(reply, oauthResponse);
+                return reply;
             } catch (e) {
-                return handleFastifyError(e, reply);
+                handleFastifyError(e, reply);
             }
         },
     });
