@@ -80,12 +80,10 @@ export const registerRoutes: FastifyPluginAsync = async function (fastify, optio
                 req.session.user = user;
 
                 if (!req.session.auth) {
-                    reply.redirect(`/`);
-                    return reply;
+                    return reply.redirect(`/`);
                 } else {
                     req.session.auth.user = { id: user!.userId };
-                    reply.redirect(`/authorize`);
-                    return reply;
+                    return reply.redirect(`/authorize`);
                 }
             } catch (err) {
                 if (err instanceof SqliteError) {

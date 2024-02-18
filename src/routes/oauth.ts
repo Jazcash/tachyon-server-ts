@@ -18,13 +18,14 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                     throw new Error("Missing auth params");
                 }
 
-                if (!req.session.auth.user) {
+                if (!req.session.auth.user && !req.session.user) {
                     return reply.redirect(`/login`);
+                } else if (!req.session.auth.user && req.session.user) {
+                    req.session.auth.user = { id: req.session.user.userId };
                 }
 
                 if (!req.session.auth.isAuthorizationApproved) {
-                    reply.redirect("/consent");
-                    return;
+                    return reply.redirect("/consent");
                 }
 
                 const oauthResponse = await oauth.completeAuthorizationRequest(req.session.auth);
