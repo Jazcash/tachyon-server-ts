@@ -5,19 +5,17 @@ import { oauthClientRepository } from "@/auth/client-repository.js";
 import { oauthScopeRepository } from "@/auth/scope-repository.js";
 import { oauthTokenRepository } from "@/auth/token-repository.js";
 import { oauthUserRepository } from "@/auth/user-repository.js";
+import { getSignSecret } from "@/utils/get-sign-secret.js";
 
 // https://jasonraimondi.github.io/ts-oauth2-server/repositories/
 
-export const oauth = new AuthorizationServer(
-    oauthClientRepository,
-    oauthTokenRepository,
-    oauthScopeRepository,
-    new JwtService("secret-key"), // TODO,
-    {
-        requiresPKCE: true,
-        requiresS256: true,
-    }
-);
+const signSecret = await getSignSecret();
+export const jwtService = new JwtService(signSecret);
+
+export const oauth = new AuthorizationServer(oauthClientRepository, oauthTokenRepository, oauthScopeRepository, jwtService, {
+    requiresPKCE: true,
+    requiresS256: true,
+});
 
 oauth.enableGrantTypes(
     [

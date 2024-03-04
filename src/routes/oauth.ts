@@ -1,7 +1,9 @@
+import { OAuthResponse } from "@jmondi/oauth2-server";
 import { handleFastifyError, handleFastifyReply, requestFromFastify } from "@jmondi/oauth2-server/fastify";
 import { FastifyPluginAsync } from "fastify";
 
 import { oauth } from "@/auth/oauth.js";
+import { steamGrant } from "@/auth/steam-grant.js";
 
 // https://jasonraimondi.github.io/ts-oauth2-server/grants/authorization_code.html
 
@@ -37,7 +39,6 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                 handleFastifyReply(reply, oauthResponse);
                 return reply;
             } catch (e) {
-                console.log("ERRORRRR");
                 handleFastifyError(e, reply);
             }
         },
@@ -81,13 +82,26 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
         },
     });
 
-    fastify.route({
+    fastify.route<{
+        Body: {
+            client_id: string;
+            subject_token_type?: string;
+            subject_token?: string;
+        };
+    }>({
         method: "POST",
         url: "/token",
         handler: async (req, reply) => {
             try {
                 const request = requestFromFastify(req);
-                const oauthResponse = await oauth.respondToAccessTokenRequest(request);
+
+                let oauthResponse: OAuthResponse;
+                if (req.body.subject_token_type === "urn:tachyon:oauth:token-type:steam_session_ticket") {
+                    oauthResponse = await steamGrant.respondToAccessTokenRequest(request);
+                } else {
+                    oauthResponse = await oauth.respondToAccessTokenRequest(request);
+                }
+
                 handleFastifyReply(reply, oauthResponse);
                 return reply;
             } catch (e) {

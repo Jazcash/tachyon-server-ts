@@ -2,19 +2,19 @@ import { database } from "@/database.js";
 import { InsertableUserRow, UpdateableUserRow, UserRow } from "@/model/db/user.js";
 
 export class UserService {
-    public async createUser(data: InsertableUserRow): Promise<UserRow> {
+    public async createUser(data: InsertableUserRow) {
         return await database.insertInto("user").values(data).returningAll().executeTakeFirstOrThrow();
     }
 
-    public async getUserById(userId: number): Promise<UserRow> {
-        return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirstOrThrow();
+    public async getUserById(userId: number) {
+        return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirst();
     }
 
-    public async getUserBySteamId(steamId: string): Promise<UserRow | undefined> {
+    public async getUserBySteamId(steamId: string) {
         return database.selectFrom("user").where("steamId", "=", steamId).selectAll().executeTakeFirst();
     }
 
-    public async getUserByGoogleId(googleId: string): Promise<UserRow | undefined> {
+    public async getUserByGoogleId(googleId: string) {
         return database.selectFrom("user").where("googleId", "=", googleId).selectAll().executeTakeFirst();
     }
 
