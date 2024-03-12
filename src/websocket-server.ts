@@ -1,3 +1,4 @@
+import { NoResultError } from "kysely";
 import { tachyonMeta } from "tachyon-protocol";
 import { WebSocketServer } from "ws";
 
@@ -14,42 +15,34 @@ export const wss = new WebSocketServer({
 });
 
 wss.addListener("connection", async (socket, request) => {
-    if (!request.headers.authorization) {
-        socket.close(1000, "authorization_header_missing");
-        return;
-    }
-
-    const [authKey, authValue] = request.headers.authorization.split(" ");
-
-    if (authKey === "Bearer") {
-        const token = await getAccessToken(authValue);
-        const user = await userService.getUserById(token.userId);
-        if (!user) {
-            return socket.close(1000, "user_not_found");
+    try {
+        if (!request.headers.authorization) {
+            throw new Error("authorization_header_missing");
         }
-        userClientService.addUserClient(socket, user);
-        // } else if (authKey === "SteamSessionTicket") {
-        //     const steamAuthResult = await authenticateSteamTicket(authValue);
-        //     if (typeof steamAuthResult === "string") {
-        //         socket.close(1000, steamAuthResult);
-        //         return;
-        //     }
-        //     user = await userService.getUserBySteamId(steamAuthResult.steamId);
-        //     const steamInfo = await getSteamPlayerSummaries(steamAuthResult.steamId);
-        //     const steamUpdateData: Pick<UserRow, "displayName" | "avatarUrl"> = {
-        //         displayName: steamInfo.personaname,
-        //         avatarUrl: steamInfo.avatar,
-        //     };
-        //     if (user) {
-        //         await userService.updateUser(user.userId, steamUpdateData);
-        //     } else {
-        //         user = await userService.createUser({
-        //             steamId: steamAuthResult.steamId,
-        //             ...steamUpdateData,
-        //         });
-        //     }
-    } else {
-        return socket.close(1000, "invalid_authorization_header");
+
+        const [authKey, authValue] = request.headers.authorization.split(" ");
+
+        if (authKey === "Bearer") {
+            const token = await getAccessToken(authValue);
+            const user = await userService.getUserById(token.userId);
+            if (!user) {
+                throw new Error("user_not_found");
+            }
+            userClientService.addUserClient(socket, user);
+        } else {
+            throw new Error("invalid_authorization_header");
+        }
+    } catch (err) {
+        let message = "unknown_error";
+        if (err instanceof Error) {
+            if (err instanceof NoResultError) {
+                message = "Access Token not found";
+            } else {
+                message = err.message;
+            }
+        }
+        socket.close(1000, message);
+        console.error(err);
     }
 });
 

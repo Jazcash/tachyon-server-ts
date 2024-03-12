@@ -1,12 +1,23 @@
+import { randomUUID } from "crypto";
+
 import { database } from "@/database.js";
 import { InsertableUserRow, UpdateableUserRow, UserRow } from "@/model/db/user.js";
 
 export class UserService {
-    public async createUser(data: InsertableUserRow) {
-        return await database.insertInto("user").values(data).returningAll().executeTakeFirstOrThrow();
+    public async createUser(data: Omit<InsertableUserRow, "userId">) {
+        const userId = randomUUID();
+
+        return await database
+            .insertInto("user")
+            .values({
+                userId: userId,
+                ...data,
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
     }
 
-    public async getUserById(userId: number) {
+    public async getUserById(userId: string) {
         return database.selectFrom("user").where("userId", "=", userId).selectAll().executeTakeFirst();
     }
 
@@ -18,7 +29,7 @@ export class UserService {
         return database.selectFrom("user").where("googleId", "=", googleId).selectAll().executeTakeFirst();
     }
 
-    public async updateUser(userId: number, values: UpdateableUserRow) {
+    public async updateUser(userId: string, values: UpdateableUserRow) {
         await database
             .updateTable("user")
             .where("userId", "=", userId)
@@ -26,7 +37,7 @@ export class UserService {
             .executeTakeFirstOrThrow();
     }
 
-    public async updateUserProperty<K extends keyof UpdateableUserRow & string>(userId: number, property: K, value: UserRow[K]) {
+    public async updateUserProperty<K extends keyof UpdateableUserRow & string>(userId: string, property: K, value: UserRow[K]) {
         try {
             await database
                 .updateTable("user")

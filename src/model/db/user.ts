@@ -1,7 +1,7 @@
-import { Generated, GeneratedAlways, Insertable, Selectable, Updateable } from "kysely";
+import { Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type UserTable = {
-    userId: GeneratedAlways<number>;
+    userId: string;
     username: string;
     email?: string;
     hashedPassword?: string;
@@ -9,12 +9,12 @@ export type UserTable = {
     googleId?: string;
     displayName: string;
     //avatarUrl: string;
-    friendIds: Generated<number[]>;
-    outgoingFriendRequestIds: Generated<number[]>;
-    incomingFriendRequestIds: Generated<number[]>;
-    ignoreIds: Generated<number[]>;
+    friendIds: Generated<string[]>;
+    outgoingFriendRequestIds: Generated<string[]>;
+    incomingFriendRequestIds: Generated<string[]>;
+    ignoreIds: Generated<string[]>;
     roles: Generated<string[]>;
-    clanId?: number;
+    clanId?: string;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
 };

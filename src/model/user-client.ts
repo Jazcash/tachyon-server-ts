@@ -1,5 +1,4 @@
-import { RemoveField } from "jaz-ts-utils";
-import type { ResponseEndpointId, ResponseType, ServiceId } from "tachyon-protocol";
+import type { ResponseCommand, ResponseEndpointId, ServiceId } from "tachyon-protocol";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
@@ -19,6 +18,22 @@ export class UserClient implements UserRow {
         this.socket.on("message", (data) => this.handleRequest(data));
     }
 
+    public get username() {
+        return this.data.username;
+    }
+
+    public get email() {
+        return this.data.email;
+    }
+
+    public get hashedPassword() {
+        return this.data.hashedPassword;
+    }
+
+    public get googleId() {
+        return this.data.googleId;
+    }
+
     public get userId() {
         return this.data.userId;
     }
@@ -31,13 +46,13 @@ export class UserClient implements UserRow {
         return this.data.displayName;
     }
 
-    public get avatarUrl() {
-        return this.data.avatarUrl;
-    }
+    // public get avatarUrl() {
+    //     return this.data.avatarUrl;
+    // }
 
-    public get countryCode() {
-        return this.data.countryCode;
-    }
+    // public get countryCode() {
+    //     return this.data.countryCode;
+    // }
 
     public get friendIds() {
         return this.data.friendIds;
@@ -70,14 +85,14 @@ export class UserClient implements UserRow {
         return this.data.updatedAt;
     }
 
-    public async addFriend(userId: number) {
+    public async addFriend(userId: string) {
         if (!this.data.friendIds.includes(userId)) {
             this.data.friendIds.push(userId);
             await userService.updateUserProperty(this.data.userId, "friendIds", this.data.friendIds);
         }
     }
 
-    public async removeFriend(userId: number) {
+    public async removeFriend(userId: string) {
         const index = this.data.friendIds.indexOf(userId);
         if (index > -1) {
             this.data.friendIds.splice(index, 1);
@@ -85,15 +100,11 @@ export class UserClient implements UserRow {
         }
     }
 
-    public async addOutgoingFriendRequest(userId: number) {
+    public async addOutgoingFriendRequest(userId: string) {
         //
     }
 
-    public sendResponse<S extends ServiceId, E extends ResponseEndpointId<S>>(
-        service: S,
-        endpoint: E,
-        data: RemoveField<ResponseType<S, E>, "command">
-    ): void {
+    public sendResponse<S extends ServiceId, E extends ResponseEndpointId<S>>(service: S, endpoint: E, command: ResponseCommand<S, E>): void {
         const validator = validators.get(`${service}/${endpoint.toString()}/response`);
 
         if (!validator) {
@@ -103,20 +114,15 @@ export class UserClient implements UserRow {
 
         const commandId = `${service}/${endpoint.toString()}/response`;
 
-        const response = {
-            command: commandId,
-            ...data,
-        } as ResponseType<S, E>;
-
-        const isValid = validator(response);
+        const isValid = validator(command);
         if (!isValid) {
             console.error(`Error validating response: ${commandId}:`);
-            console.error(response);
+            console.error(command);
             console.error(validator.errors);
             return;
         }
 
-        this.socket.send(JSON.stringify(response));
+        this.socket.send(JSON.stringify(command));
     }
 
     protected async handleRequest(message: Data) {

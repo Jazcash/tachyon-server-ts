@@ -4,7 +4,7 @@ import { Selectable } from "kysely";
 
 export type SessionTable = {
     sessionId: string;
-    userId?: number;
+    userId?: string;
     googleId?: string;
     steamId?: string;
     auth?: AuthorizationRequest;

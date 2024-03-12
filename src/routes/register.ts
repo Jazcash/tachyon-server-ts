@@ -1,8 +1,8 @@
 import { SqliteError } from "better-sqlite3";
 import { FastifyPluginAsync } from "fastify";
 
-import { database } from "@/database.js";
 import { UserRow } from "@/model/db/user.js";
+import { userService } from "@/user-service.js";
 import { loggedOutOnly } from "@/utils/fastify-login-prevalidation.js";
 import { hashPassword } from "@/utils/hash-password.js";
 
@@ -39,38 +39,26 @@ export const registerRoutes: FastifyPluginAsync = async function (fastify, optio
                 let user: UserRow | undefined;
 
                 if (req.session.googleId) {
-                    user = await database
-                        .insertInto("user")
-                        .values({
-                            googleId: req.session.googleId,
-                            username: req.body.username,
-                            displayName: req.body.username,
-                        })
-                        .returningAll()
-                        .executeTakeFirstOrThrow();
+                    user = await userService.createUser({
+                        googleId: req.session.googleId,
+                        username: req.body.username,
+                        displayName: req.body.username,
+                    });
                 } else if (req.session.steamId) {
-                    user = await database
-                        .insertInto("user")
-                        .values({
-                            steamId: req.session.steamId,
-                            username: req.body.username,
-                            displayName: req.body.username,
-                        })
-                        .returningAll()
-                        .executeTakeFirstOrThrow();
+                    user = await userService.createUser({
+                        steamId: req.session.steamId,
+                        username: req.body.username,
+                        displayName: req.body.username,
+                    });
                 } else if (req.body.email && req.body.password) {
                     const hashedPassword = await hashPassword(req.body.password);
 
-                    user = await database
-                        .insertInto("user")
-                        .values({
-                            username: req.body.username,
-                            email: req.body.email,
-                            hashedPassword,
-                            displayName: req.body.username,
-                        })
-                        .returningAll()
-                        .executeTakeFirstOrThrow();
+                    user = await userService.createUser({
+                        username: req.body.username,
+                        email: req.body.email,
+                        hashedPassword,
+                        displayName: req.body.username,
+                    });
 
                     // TODO: do basic email account verification here if email service is configured and config.accountVerification is true
                 } else {

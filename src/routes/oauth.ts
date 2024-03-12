@@ -1,9 +1,7 @@
-import { OAuthResponse } from "@jmondi/oauth2-server";
 import { handleFastifyError, handleFastifyReply, requestFromFastify } from "@jmondi/oauth2-server/fastify";
 import { FastifyPluginAsync } from "fastify";
 
 import { oauth } from "@/auth/oauth.js";
-import { steamGrant } from "@/auth/steam-grant.js";
 
 // https://jasonraimondi.github.io/ts-oauth2-server/grants/authorization_code.html
 
@@ -82,30 +80,27 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
         },
     });
 
-    fastify.route<{
-        Body: {
-            client_id: string;
-            subject_token_type?: string;
-            subject_token?: string;
-        };
-    }>({
+    fastify.route({
         method: "POST",
         url: "/token",
         handler: async (req, reply) => {
             try {
                 const request = requestFromFastify(req);
-
-                let oauthResponse: OAuthResponse;
-                if (req.body.subject_token_type === "urn:tachyon:oauth:token-type:steam_session_ticket") {
-                    oauthResponse = await steamGrant.respondToAccessTokenRequest(request);
-                } else {
-                    oauthResponse = await oauth.respondToAccessTokenRequest(request);
-                }
-
+                const oauthResponse = await oauth.respondToAccessTokenRequest(request);
                 handleFastifyReply(reply, oauthResponse);
                 return reply;
-            } catch (e) {
-                handleFastifyError(e, reply);
+            } catch (err) {
+                if (err instanceof Error && err.message === "user_not_found") {
+                    reply.status(401);
+                    // return {
+                    //     statusCode: 401,
+                    //     error: "complete_steam_registration",
+                    //     message:
+                    // }
+                    // TODO: generate unique, unguessable url for user to complete steam registration?
+                }
+
+                handleFastifyError(err, reply);
             }
         },
     });

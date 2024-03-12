@@ -4,7 +4,7 @@ import { UserRow } from "@/model/db/user.js";
 import { UserClient } from "@/model/user-client.js";
 
 export class UserClientService {
-    protected userClients: Map<number, UserClient> = new Map();
+    protected userClients: Map<string, UserClient> = new Map();
 
     public addUserClient(socket: WebSocket, userData: UserRow): UserClient {
         const existingUser = this.userClients.get(userData.userId);
@@ -23,7 +23,7 @@ export class UserClientService {
         return userClient;
     }
 
-    public getUserClient(userId: number): UserClient | undefined {
+    public getUserClient(userId: string): UserClient | undefined {
         return this.userClients.get(userId);
     }
 }

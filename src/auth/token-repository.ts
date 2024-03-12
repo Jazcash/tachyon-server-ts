@@ -31,9 +31,8 @@ export const oauthTokenRepository: OAuthTokenRepository = {
         return token;
     },
     async persist(token: OAuthToken): Promise<void> {
-        if (!token.user?.id || typeof token.user?.id === "string") {
-            // don't need this if the arg type is changed to custom?
-            throw new Error("UserId must be of type number | null | undefined, received string");
+        if (typeof token.user?.id !== "string") {
+            throw new Error(`userId must be of type string, got ${typeof token.user?.id}`);
         }
 
         const values: InsertableTokenRow = {
@@ -43,7 +42,7 @@ export const oauthTokenRepository: OAuthTokenRepository = {
             scopes: token.scopes.map((scope) => scope.name),
             refreshToken: token.refreshToken,
             refreshTokenExpiresAt: token.refreshTokenExpiresAt,
-            userId: token.user?.id,
+            userId: token.user.id,
             updatedAt: new Date(),
         };
 

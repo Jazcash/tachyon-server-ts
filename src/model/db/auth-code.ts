@@ -7,7 +7,7 @@ export type AuthCodeTable = {
     codeChallenge?: string | null;
     codeChallengeMethod?: CodeChallengeMethod | null;
     expiresAt: Date;
-    userId?: number | null;
+    userId?: string | null;
     clientId: string;
     scopes: string[];
     createdAt: Generated<Date>;

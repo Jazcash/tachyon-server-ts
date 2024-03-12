@@ -26,9 +26,8 @@ export const oauthAuthCodeRepository: OAuthAuthCodeRepository = {
         };
     },
     async persist(authCode: OAuthAuthCode): Promise<void> {
-        if (typeof authCode.user?.id === "string") {
-            // don't need this if the arg type is changed to custom?
-            throw new Error("UserId must be of type number | null | undefined, received string");
+        if (typeof authCode.user?.id !== "string") {
+            throw new Error(`userId must be of type string, got ${typeof authCode.user?.id}`);
         }
 
         await database
@@ -38,7 +37,7 @@ export const oauthAuthCodeRepository: OAuthAuthCodeRepository = {
                 code: authCode.code,
                 expiresAt: authCode.expiresAt,
                 scopes: authCode.scopes.map((scope) => scope.name),
-                userId: authCode.user?.id,
+                userId: authCode.user.id,
                 codeChallenge: authCode.codeChallenge,
                 codeChallengeMethod: authCode.codeChallengeMethod,
                 redirectUri: authCode.redirectUri,

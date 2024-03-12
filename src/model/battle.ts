@@ -1,11 +1,11 @@
 export type Battle = {
-    lobbyId: number | null;
+    lobbyId: string | null;
     ip: string;
     port: number;
     runtimeMs: number;
     engine: string;
     game: string;
     map: string;
-    playerIds: number[];
-    spectatorIds: number[];
+    playerIds: string[];
+    spectatorIds: string[];
 };
