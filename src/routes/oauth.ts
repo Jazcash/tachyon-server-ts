@@ -90,16 +90,6 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                 handleFastifyReply(reply, oauthResponse);
                 return reply;
             } catch (err) {
-                if (err instanceof Error && err.message === "user_not_found") {
-                    reply.status(401);
-                    // return {
-                    //     statusCode: 401,
-                    //     error: "complete_steam_registration",
-                    //     message:
-                    // }
-                    // TODO: generate unique, unguessable url for user to complete steam registration?
-                }
-
                 handleFastifyError(err, reply);
             }
         },

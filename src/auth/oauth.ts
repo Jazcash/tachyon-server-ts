@@ -56,8 +56,6 @@ oauth.enableGrantType({
                     throw OAuthException.accessDenied(err.message);
                 } else if (err.message === "steam:banned") {
                     throw OAuthException.accessDenied(err.message);
-                } else if (err.message === "user_not_found") {
-                    throw err;
                 } else {
                     throw OAuthException.internalServerError(err.message);
                 }

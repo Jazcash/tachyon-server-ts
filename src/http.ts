@@ -6,17 +6,20 @@ import fastifyMultipart from "@fastify/multipart";
 import { fastifyOauth2, OAuth2Namespace } from "@fastify/oauth2";
 import { fastifySession } from "@fastify/session";
 import { fastifyView } from "@fastify/view";
+import fastifyWebsocket from "@fastify/websocket";
 import { AuthorizationRequest } from "@jmondi/oauth2-server";
 import chalk from "chalk";
 import Fastify from "fastify";
 import handlebars from "handlebars";
+import handlebarsHelpers from "handlebars-helpers";
 import path, { dirname } from "path";
+import { tachyonMeta } from "tachyon-protocol";
 import { fileURLToPath } from "url";
 
 import { config } from "@/config.js";
 import { dbSessionStore } from "@/db-session-store.js";
 import { UserRow } from "@/model/db/user.js";
-import { homeRoute } from "@/routes/home.js";
+import { indexRoute } from "@/routes/index.js";
 import { loginRoutes } from "@/routes/login.js";
 import { logoutRoute } from "@/routes/logout.js";
 import { oauthRoutes } from "@/routes/oauth.js";
@@ -50,6 +53,20 @@ fastify.setErrorHandler((err, req, reply) => {
     reply.send(err);
 });
 
+const hbs = handlebars.create();
+const helpers = handlebarsHelpers();
+for (const key in helpers) {
+    hbs.registerHelper(key, helpers[key]);
+}
+
+await fastify.register(fastifyWebsocket, {
+    options: {
+        handleProtocols: (protocols, request) => {
+            return `tachyon-${tachyonMeta.version}`;
+        },
+        //verifyClient: authorizeSocketConnection,
+    },
+});
 await fastify.register(fastifyCookie, { secret: await getSignSecret() });
 await fastify.register(fastifySession, { secret: await getSignSecret(), cookie: { secure: false }, store: dbSessionStore }); // TODO: use fastifySecureSession instead? secure cookie should be true for https
 await fastify.register(fastifyHelmet, { enableCSPNonces: true });
@@ -57,7 +74,7 @@ await fastify.register(fastifyCsrfProtection, { cookieOpts: { signed: true } });
 await fastify.register(fastifyMultipart, { attachFieldsToBody: true });
 await fastify.register(fastifyFormbody);
 await fastify.register(fastifyView, {
-    engine: { handlebars },
+    engine: { handlebars: hbs },
     root: path.join(__dirname, "./views"),
     options: {
         partials: {
@@ -83,11 +100,11 @@ fastify.register(fastifyOauth2, {
     },
 });
 
-await fastify.register(homeRoute);
 await fastify.register(registerRoutes);
 await fastify.register(loginRoutes);
 await fastify.register(logoutRoute);
 await fastify.register(oauthRoutes);
+await fastify.register(indexRoute);
 
 export async function startHttpServer() {
     try {

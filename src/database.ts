@@ -3,6 +3,7 @@ import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/db/database.js";
+import { hashPassword } from "@/utils/hash-password.js";
 
 export const database = new Kysely<DatabaseModel>({
     dialect: new SqliteDialect({
@@ -113,14 +114,14 @@ await database.schema
     .addColumn("auth", "json")
     .execute();
 
-// await database
-//     .insertInto("user")
-//     .values({
-//         email: "test@tachyontest.com",
-//         username: "dummy",
-//         hashedPassword: await hashPassword("fish"),
-//         //avatarUrl: "not_yet",
-//         displayName: "Dummy User",
-//     })
-//     .onConflict((oc) => oc.doNothing())
-//     .execute();
+await database
+    .insertInto("user")
+    .values({
+        userId: "123",
+        email: "test@tachyontest.com",
+        username: "dummy",
+        hashedPassword: await hashPassword("fish"),
+        displayName: "Dummy User",
+    })
+    .onConflict((oc) => oc.doNothing())
+    .execute();

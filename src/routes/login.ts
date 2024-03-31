@@ -36,12 +36,16 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
                 }
 
                 if (!user.hashedPassword) {
-                    throw new Error("invalid_login");
+                    reply.status(401);
+                    console.log("no password");
+                    return "invalid_login";
                 }
 
                 const passwordValid = await comparePassword(password, user.hashedPassword);
                 if (!passwordValid) {
-                    throw new Error("invalid_login");
+                    reply.status(401);
+                    console.log("bad password");
+                    return "invalid_login";
                 }
 
                 req.session.user = user;
@@ -56,7 +60,9 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
                 reply.redirect(`/authorize`);
                 return reply;
             } catch (err) {
-                throw new Error("invalid_login");
+                reply.status(401);
+                console.error(err);
+                return "invalid_login";
             }
         },
     });

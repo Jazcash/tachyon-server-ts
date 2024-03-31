@@ -12,6 +12,7 @@
         "baseUrl": ".",
         "noUnusedParameters": false,
         "noUnusedLocals": false,
+        "sourceMap": true,
         "paths": {
             "@/*": ["src/*"]
         },

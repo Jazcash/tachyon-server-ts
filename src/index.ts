@@ -4,7 +4,6 @@ import path, { dirname } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 
 import { startHttpServer } from "@/http.js";
-import { startWssServer } from "@/websocket-server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,9 +34,9 @@ for (const serviceDir of serviceDirs) {
     for (const endpointDir of endpointDirs) {
         const hasRequestSchema = fs.existsSync(`./node_modules/tachyon-protocol/dist/${serviceDir}/${endpointDir}/request.json`);
         if (hasRequestSchema && (!registeredHandlers[serviceDir] || !registeredHandlers[serviceDir].includes(endpointDir))) {
-            console.warn(chalk.yellow(`No endpoint handler defined for ${serviceDir}/${endpointDir}`));
+            console.warn(chalk.red(`No handler defined for ${serviceDir}/${endpointDir}`));
         }
     }
 }
 
-await Promise.all([startHttpServer(), startWssServer()]);
+await startHttpServer();

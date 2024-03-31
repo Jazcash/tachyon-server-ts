@@ -14,23 +14,21 @@
             </label>
         </div>
 
-        {{#if collectEmail}}
-        <div>
-            <label>
-                Email
-                <input type="email" name="email" value="test@tachyontest.com" required>
-            </label>
-        </div>
-        {{/if}}
+        {{#eq strategy "basic"}}
+            <div>
+                <label>
+                    Email
+                    <input type="email" name="email" value="test@tachyontest.com" required>
+                </label>
+            </div>
 
-        {{#if collectPassword}}
-        <div>
-            <label>
-                Password
-                <input type="password" name="password" value="fish" required>
-            </label>
-        </div>
-        {{/if}}
+            <div>
+                <label>
+                    Password
+                    <input type="password" name="password" value="fish" required>
+                </label>
+            </div>
+        {{/eq}}
 
         <div id="error" class="error"></div>
         

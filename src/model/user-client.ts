@@ -1,4 +1,4 @@
-import type { ResponseCommand, ResponseEndpointId, ServiceId } from "tachyon-protocol";
+import type { GenericResponseCommand, ResponseType } from "tachyon-protocol";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
@@ -8,7 +8,7 @@ import { userService } from "@/user-service.js";
 import { validators } from "@/validators.js";
 
 export class UserClient implements UserRow {
-    protected socket: WebSocket;
+    public socket: WebSocket;
     protected data: UserRow;
 
     constructor(socket: WebSocket, data: UserRow) {
@@ -16,6 +16,27 @@ export class UserClient implements UserRow {
         this.data = data;
 
         this.socket.on("message", (data) => this.handleRequest(data));
+
+        this.sendResponse({
+            commandId: "system/connected/response",
+            messageId: "0",
+            status: "success",
+            data: {
+                userId: this.data.userId,
+                username: this.data.username,
+                displayName: this.data.displayName,
+                friendIds: this.data.friendIds,
+                ignoreIds: this.data.ignoreIds,
+                clanId: this.data.clanId ?? null,
+                roles: this.data.roles,
+                avatarUrl: "",
+                battleStatus: null,
+                incomingFriendRequestIds: this.data.incomingFriendRequestIds,
+                outgoingFriendRequestIds: this.data.outgoingFriendRequestIds,
+                partyId: null,
+                status: "lobby",
+            },
+        });
     }
 
     public get username() {
@@ -104,67 +125,79 @@ export class UserClient implements UserRow {
         //
     }
 
-    public sendResponse<S extends ServiceId, E extends ResponseEndpointId<S>>(service: S, endpoint: E, command: ResponseCommand<S, E>): void {
-        const validator = validators.get(`${service}/${endpoint.toString()}/response`);
+    public sendResponse(responseCommand: ResponseType): void {
+        const validator = validators.get(responseCommand.commandId);
 
         if (!validator) {
-            console.error(`No schema or validator found for response: ${service}/${endpoint.toString()}`);
+            console.error(`No schema or validator found for command: ${responseCommand.commandId}`);
             return;
         }
 
-        const commandId = `${service}/${endpoint.toString()}/response`;
-
-        const isValid = validator(command);
+        const isValid = validator(responseCommand);
         if (!isValid) {
-            console.error(`Error validating response: ${commandId}:`);
-            console.error(command);
             console.error(validator.errors);
-            return;
+            throw new Error(`Response validation failed for command ${(responseCommand as any).commandId}`);
         }
 
-        this.socket.send(JSON.stringify(command));
+        this.socket.send(JSON.stringify(responseCommand));
     }
 
     protected async handleRequest(message: Data) {
         const jsonStr = message.toString();
 
         try {
-            const request = JSON.parse(jsonStr) as { command: `${string}/${string}/request`; data?: object };
+            const request = JSON.parse(jsonStr) as { commandId: `${string}/${string}/request`; messageId: string; data?: object };
 
-            const validator = validators.get(request.command);
+            const validator = validators.get(request.commandId);
 
             if (!validator) {
-                throw new Error(`No validator found for command: ${request.command}`);
+                throw new Error(`No request validator found for command: ${request.commandId}`);
             }
 
             const isValid = validator(request);
             if (!isValid) {
                 console.error(validator.errors);
-                throw new Error("Request validation failed");
+                throw new Error(`Request validation failed for command ${(request as any).commandId}`);
             }
 
-            const [serviceId, endpointId] = request.command.split("/", 2);
+            const [serviceId, endpointId] = request.commandId.split("/", 2);
 
             const handler = handlers.get(`${serviceId}/${endpointId}`);
 
             if (!handler) {
-                throw new Error(`No request handler for ${request.command}`);
+                throw new Error(`No request handler for ${request.commandId}`);
             }
 
-            let response: any;
+            const response: any = {
+                commandId: `${serviceId}/${endpointId}`,
+                messageId: request.messageId,
+            };
 
             try {
-                response = await handler({ client: this, database }, request.data);
+                const responseData = (await handler.responseHandler({ client: this, database }, request.data)) as Omit<
+                    GenericResponseCommand,
+                    "commandId" | "messageId"
+                >;
+
+                if (responseData) {
+                    Object.assign(response, responseData);
+                }
             } catch (err) {
                 console.log("err", err);
 
-                response = {
+                Object.assign(response, {
                     status: "failed",
                     reason: "internal_error",
-                };
+                });
             }
 
-            this.sendResponse(serviceId as any, endpointId as any, response as never); // hacky
+            console.log(response);
+
+            this.sendResponse(response);
+
+            if (handler.postResponseHandler) {
+                await handler.postResponseHandler({ client: this, database }, request.data);
+            }
         } catch (err) {
             console.error(`received message:`, jsonStr);
             console.error(`Error parsing request`, err);

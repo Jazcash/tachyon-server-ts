@@ -1,8 +1,14 @@
 import { RouteShorthandOptions } from "fastify";
 
+import { authorizeSession } from "@/auth/authorize-session.js";
+
 export const loggedInOnly: RouteShorthandOptions["preValidation"] = async (req, reply) => {
     if (!req.session.user) {
-        reply.redirect("/login");
+        if (req.headers.authorization) {
+            await authorizeSession(req);
+        } else {
+            reply.redirect("/login");
+        }
     }
 };
 

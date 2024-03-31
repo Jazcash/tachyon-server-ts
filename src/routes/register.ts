@@ -2,24 +2,26 @@ import { SqliteError } from "better-sqlite3";
 import { FastifyPluginAsync } from "fastify";
 
 import { UserRow } from "@/model/db/user.js";
+import { authenticateSteamTicket } from "@/steam.js";
 import { userService } from "@/user-service.js";
 import { loggedOutOnly } from "@/utils/fastify-login-prevalidation.js";
 import { hashPassword } from "@/utils/hash-password.js";
 
 export const registerRoutes: FastifyPluginAsync = async function (fastify, options) {
-    fastify.route<{ Querystring: { strategy: "basic" | "google" | "steam" } }>({
+    fastify.route<{ Querystring: { strategy?: "basic" | "google" | "steam" } }>({
         method: "GET",
         url: "/register",
         preValidation: loggedOutOnly,
         handler: async (req, reply) => {
-            const collectEmail = !req.query.strategy || req.query.strategy === "basic";
-            const collectPassword = !req.query.strategy || req.query.strategy === "basic";
+            if (req.query.strategy && !["basic", "google", "steam"].includes(req.query.strategy)) {
+                reply.status(400);
+                return "invalid_strategy";
+            }
 
             return reply.view("register", {
                 csrfToken: reply.generateCsrf(),
                 nonce: reply.cspNonce,
-                collectEmail,
-                collectPassword,
+                strategy: req.query.strategy ?? "basic",
             });
         },
     });
@@ -29,6 +31,7 @@ export const registerRoutes: FastifyPluginAsync = async function (fastify, optio
             username: string;
             email?: string;
             password?: string;
+            steamSessionTicket?: string;
         };
     }>({
         method: "POST",
@@ -37,6 +40,11 @@ export const registerRoutes: FastifyPluginAsync = async function (fastify, optio
         handler: async (req, reply) => {
             try {
                 let user: UserRow | undefined;
+
+                if (req.body.steamSessionTicket) {
+                    const steamAuthResponse = await authenticateSteamTicket(req.body.steamSessionTicket);
+                    req.session.steamId = steamAuthResponse.steamId;
+                }
 
                 if (req.session.googleId) {
                     user = await userService.createUser({

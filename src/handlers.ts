@@ -1,6 +1,5 @@
-import { RemoveField } from "jaz-ts-utils";
 import { Kysely } from "kysely";
-import type { GetCommands, RequestEndpointId, ServiceId } from "tachyon-protocol";
+import type { EndpointId, RequestData, ResponseData, ServiceId } from "tachyon-protocol";
 
 import { DatabaseModel } from "@/model/db/database.js";
 import { UserClient } from "@/model/user-client.js";
@@ -10,15 +9,24 @@ type HandlerArgs = {
     database: Kysely<DatabaseModel>;
 };
 
-export const handlers: Map<string, (args: HandlerArgs, data?: any) => Promise<any>> = new Map();
+export const handlers: Map<
+    string,
+    {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        responseHandler: (args: HandlerArgs, data?: any) => Promise<any>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        postResponseHandler?: (args: HandlerArgs, data?: any) => Promise<void>;
+    }
+> = new Map();
 
 export function defineHandler<
     S extends ServiceId,
-    E extends RequestEndpointId<S> & string,
-    T extends GetCommands<S, E>,
-    ReqData extends T extends { request: { data: infer Req } } ? Req : object,
-    ResData extends T extends { response: infer Res } ? RemoveField<Res, "command"> : void,
-    CB extends (args: HandlerArgs, data: ReqData) => Promise<ResData>,
->(serviceId: S, endpointId: E, callback: CB) {
-    handlers.set(`${serviceId}/${endpointId}`, callback);
+    E extends EndpointId<S>,
+    CB extends (args: HandlerArgs, data: RequestData<S, E>) => Promise<ResponseData<S, E>>,
+    PostCB extends (args: HandlerArgs, data: RequestData<S, E>) => Promise<void>,
+>(serviceId: S, endpointId: E, callback: CB, postResponseCallback?: PostCB) {
+    handlers.set(`${serviceId}/${endpointId.toString()}`, {
+        responseHandler: callback,
+        postResponseHandler: postResponseCallback,
+    });
 }
