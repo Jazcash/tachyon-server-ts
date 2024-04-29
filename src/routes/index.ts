@@ -10,7 +10,10 @@ export const indexRoute: FastifyPluginAsync = async function (fastify, options) 
         preValidation: loggedInOnly,
         wsHandler: async (ws, req) => {
             if (req.session.user) {
-                userClientService.addUserClient(ws, req.session.user);
+                userClientService.addUserClient(ws, {
+                    ...req.session.user,
+                    ipAddress: req.ip,
+                });
             } else {
                 throw new Error("no user");
             }

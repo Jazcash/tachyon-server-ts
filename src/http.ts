@@ -83,7 +83,6 @@ await fastify.register(fastifyView, {
     },
 });
 
-/** @ts-expect-error https://github.com/fastify/fastify-oauth2/issues/249 */
 fastify.register(fastifyOauth2, {
     name: "googleOAuth2",
     scope: ["openid"],
@@ -109,7 +108,7 @@ await fastify.register(indexRoute);
 export async function startHttpServer() {
     try {
         await fastify.listen({ port: config.port });
-        console.log(chalk.green(`Tachyon Server listening on ${fastify.listeningOrigin}`));
+        console.log(chalk.green(`Tachyon Server listening on ${fastify.listeningOrigin}, serving Tachyon v${tachyonMeta.version}`));
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);

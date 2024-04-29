@@ -1,17 +1,21 @@
-import type { GenericResponseCommand, ResponseType } from "tachyon-protocol";
+import { type EndpointId, type GenericResponseCommand, type ResponseType, type ServiceId, tachyonMeta } from "tachyon-protocol";
+import * as validators from "tachyon-protocol/validators";
 import { Data, WebSocket } from "ws";
 
 import { database } from "@/database.js";
-import { handlers } from "@/handlers.js";
+import { handlerService } from "@/handler-service.js";
 import { UserRow } from "@/model/db/user.js";
 import { userService } from "@/user-service.js";
-import { validators } from "@/validators.js";
+
+export type UserClientData = UserRow & {
+    ipAddress: string;
+};
 
 export class UserClient implements UserRow {
     public socket: WebSocket;
-    protected data: UserRow;
+    protected data: UserClientData;
 
-    constructor(socket: WebSocket, data: UserRow) {
+    constructor(socket: WebSocket, data: UserClientData) {
         this.socket = socket;
         this.data = data;
 
@@ -37,6 +41,10 @@ export class UserClient implements UserRow {
                 status: "lobby",
             },
         });
+    }
+
+    public get ipAddress() {
+        return this.data.ipAddress;
     }
 
     public get username() {
@@ -126,29 +134,57 @@ export class UserClient implements UserRow {
     }
 
     public sendResponse(responseCommand: ResponseType): void {
-        const validator = validators.get(responseCommand.commandId);
+        const [serviceId, endpointId, commandType] = responseCommand.commandId.split("/");
+
+        const validatorId = `${serviceId}_${endpointId}_${commandType}`;
+        const validator = validators[validatorId as keyof typeof validators];
 
         if (!validator) {
-            console.error(`No schema or validator found for command: ${responseCommand.commandId}`);
+            console.error(`No response schema or validator found for ${serviceId}/${endpointId}`);
             return;
         }
 
         const isValid = validator(responseCommand);
         if (!isValid) {
+            console.error("Response validation failed");
             console.error(validator.errors);
-            throw new Error(`Response validation failed for command ${(responseCommand as any).commandId}`);
+            throw new Error(`Response validation failed for ${serviceId}/${endpointId}`);
         }
 
         this.socket.send(JSON.stringify(responseCommand));
     }
 
-    protected async handleRequest(message: Data) {
+    protected async handleRequest(message: Data): Promise<void> {
         const jsonStr = message.toString();
 
         try {
             const request = JSON.parse(jsonStr) as { commandId: `${string}/${string}/request`; messageId: string; data?: object };
+            const [serviceId, endpointId] = request.commandId.split("/", 2);
 
-            const validator = validators.get(request.commandId);
+            if (!this.isValidServiceId(serviceId)) {
+                throw new Error(`Invalid ServiceId: ${serviceId}`);
+            }
+
+            if (!this.isValidEndpointId(serviceId, endpointId)) {
+                throw new Error(`Invalid EndpointId: ${endpointId}`);
+            }
+
+            const response: any = {
+                commandId: `${serviceId}/${endpointId}/response`,
+                messageId: request.messageId,
+            };
+
+            const handler = await handlerService.getHandler(serviceId, endpointId as EndpointId<typeof serviceId>);
+
+            if (!handler) {
+                response.status = "failed";
+                response.reason = "command_unimplemented";
+
+                this.sendResponse(response);
+                return;
+            }
+
+            const validator = validators[`${serviceId}_${endpointId}_request` as keyof typeof validators];
 
             if (!validator) {
                 throw new Error(`No request validator found for command: ${request.commandId}`);
@@ -156,22 +192,15 @@ export class UserClient implements UserRow {
 
             const isValid = validator(request);
             if (!isValid) {
+                console.error(`Request command validation failed for ${serviceId}/${endpointId}:`);
                 console.error(validator.errors);
-                throw new Error(`Request validation failed for command ${(request as any).commandId}`);
+
+                response.status = "failed";
+                response.reason = "invalid_request";
+
+                this.sendResponse(response);
+                return;
             }
-
-            const [serviceId, endpointId] = request.commandId.split("/", 2);
-
-            const handler = handlers.get(`${serviceId}/${endpointId}`);
-
-            if (!handler) {
-                throw new Error(`No request handler for ${request.commandId}`);
-            }
-
-            const response: any = {
-                commandId: `${serviceId}/${endpointId}`,
-                messageId: request.messageId,
-            };
 
             try {
                 const responseData = (await handler.responseHandler({ client: this, database }, request.data)) as Omit<
@@ -191,8 +220,6 @@ export class UserClient implements UserRow {
                 });
             }
 
-            console.log(response);
-
             this.sendResponse(response);
 
             if (handler.postResponseHandler) {
@@ -202,5 +229,13 @@ export class UserClient implements UserRow {
             console.error(`received message:`, jsonStr);
             console.error(`Error parsing request`, err);
         }
+    }
+
+    protected isValidServiceId(serviceId: string): serviceId is ServiceId {
+        return serviceId in tachyonMeta.ids;
+    }
+
+    protected isValidEndpointId(serviceId: ServiceId, endpointId: string): boolean {
+        return endpointId in tachyonMeta.ids[serviceId];
     }
 }

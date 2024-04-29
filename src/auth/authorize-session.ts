@@ -1,3 +1,4 @@
+import { OAuthException } from "@jmondi/oauth2-server";
 import { FastifyRequest } from "fastify";
 
 import { jwtService } from "@/auth/oauth.js";
@@ -13,6 +14,7 @@ type JWTToken = {
     access_token_id?: string;
     refresh_token_id?: string;
     iat?: number;
+    jti?: string;
 };
 
 export async function authorizeSession(req: FastifyRequest) {
@@ -23,11 +25,8 @@ export async function authorizeSession(req: FastifyRequest) {
 
         const [authKey, authValue] = req.headers.authorization.split(" ");
 
-        if (authKey === "Bearer") {
+        if (authKey === "Bearer" && authValue) {
             const token = await getAccessToken(authValue);
-            if (!token) {
-                throw new Error("access_token_not_found");
-            }
 
             const user = await userService.getUserById(token.userId);
             if (!user) {
@@ -39,24 +38,48 @@ export async function authorizeSession(req: FastifyRequest) {
             throw new Error("invalid_authorization_header");
         }
     } catch (err) {
-        console.error(err);
         req.session.user = undefined;
-        throw new Error("unknown_server_error");
+        throw err;
     }
 }
 
-export async function getAccessToken(encodedToken: string): Promise<TokenRow | undefined> {
-    const decodedToken = jwtService.decode(encodedToken) as JWTToken;
-
-    if (decodedToken.refresh_token_id) {
-        return await database.selectFrom("token").where("refreshToken", "=", decodedToken.refresh_token_id).selectAll().executeTakeFirst();
-    } else if (decodedToken.access_token_id) {
-        return await database.selectFrom("token").where("accessToken", "=", decodedToken.access_token_id).selectAll().executeTakeFirst();
+export async function getAccessToken(encodedToken: string): Promise<TokenRow> {
+    if (!encodedToken) {
+        throw OAuthException.badRequest("missing_token");
     }
 
-    throw new Error("No token found");
+    let decodedToken: JWTToken;
 
-    // if (token.expiresAt < new Date()) {
-    //     throw new Error("Token expired");
-    // }
+    try {
+        decodedToken = jwtService.decode(encodedToken) as JWTToken;
+    } catch (err) {
+        console.error(err);
+        throw OAuthException.badRequest("error_decoding_token");
+    }
+
+    if (decodedToken.refresh_token_id) {
+        const token = await database.selectFrom("token").where("refreshToken", "=", decodedToken.refresh_token_id).selectAll().executeTakeFirst();
+        if (!token) {
+            throw OAuthException.badRequest("invalid_refresh_token");
+        }
+        if (token.refreshTokenExpiresAt && token.refreshTokenExpiresAt < new Date()) {
+            throw OAuthException.badRequest("refresh_token_expired");
+        }
+        return token;
+    } else if (decodedToken.access_token_id || decodedToken.jti) {
+        const token = await database
+            .selectFrom("token")
+            .where("accessToken", "=", decodedToken.access_token_id || decodedToken.jti!)
+            .selectAll()
+            .executeTakeFirst();
+        if (!token) {
+            throw OAuthException.badRequest("invalid_access_token");
+        }
+        if (token.accessTokenExpiresAt && token.accessTokenExpiresAt < new Date()) {
+            throw OAuthException.badRequest("access_token_expired");
+        }
+        return token;
+    }
+
+    throw OAuthException.internalServerError("unknown_server_token_error");
 }

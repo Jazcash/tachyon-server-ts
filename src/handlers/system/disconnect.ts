@@ -1,14 +1,14 @@
-import { defineHandler } from "@/handlers.js";
+import { HandlerService } from "@/handler-service.js";
 
-export default defineHandler(
+export default HandlerService.defineHandler(
     "system",
     "disconnect",
-    async (options, data) => {
+    async () => {
         return {
             status: "success",
         };
     },
-    async (options, data) => {
-        options.client.socket.close();
+    async ({ client }) => {
+        client.socket.close();
     }
 );

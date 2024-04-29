@@ -1,17 +1,9 @@
 import { addAutohost } from "@/autohosts.js";
-import { defineHandler } from "@/handlers.js";
+import { HandlerService } from "@/handler-service.js";
 
-export default defineHandler("bot", "slave", async (options, data) => {
-    const ip = options.client.socket.remoteAddress;
-    if (!ip) {
-        return {
-            status: "failed",
-            reason: "internal_error",
-        };
-    }
-
+export default HandlerService.defineHandler("autohost", "slave", async ({ client }) => {
     addAutohost({
-        ip,
+        ip: client.ipAddress,
         region: "TODO",
         battles: [],
         lobbies: [],

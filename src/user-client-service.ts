@@ -1,12 +1,11 @@
 import { WebSocket } from "ws";
 
-import { UserRow } from "@/model/db/user.js";
-import { UserClient } from "@/model/user-client.js";
+import { UserClient, UserClientData } from "@/model/user-client.js";
 
 export class UserClientService {
     protected userClients: Map<string, UserClient> = new Map();
 
-    public addUserClient(socket: WebSocket, userData: UserRow): UserClient {
+    public addUserClient(socket: WebSocket, userData: UserClientData): UserClient {
         const existingUser = this.userClients.get(userData.userId);
         if (existingUser) {
             return existingUser;
