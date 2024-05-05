@@ -4,6 +4,7 @@ export type Config = {
     /** Will always re-import response handlers on every request, so handlers can be developed without restarting server. Disable for production. */
     hotLoadHandlers?: boolean;
     port?: number;
+    autohostPort?: number;
     accountVerification?: boolean;
     mail?: {
         port: number;

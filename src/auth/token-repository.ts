@@ -3,6 +3,7 @@ import { DateInterval, generateRandomToken, OAuthClient, OAuthScope, OAuthToken,
 import { oauthClientRepository } from "@/auth/client-repository.js";
 import { database } from "@/database.js";
 import { InsertableTokenRow } from "@/model/db/token.js";
+import { isUserIdValid } from "@/utils/is-userId-string.js";
 
 export const oauthTokenRepository: OAuthTokenRepository = {
     async issueToken(client: OAuthClient, scopes: OAuthScope[], user?: OAuthUser | null | undefined): Promise<OAuthToken> {
@@ -31,7 +32,7 @@ export const oauthTokenRepository: OAuthTokenRepository = {
         return token;
     },
     async persist(token: OAuthToken): Promise<void> {
-        if (typeof token.user?.id !== "string") {
+        if (!isUserIdValid(token.user?.id)) {
             throw new Error(`userId must be of type string, got ${typeof token.user?.id}`);
         }
 
@@ -42,7 +43,7 @@ export const oauthTokenRepository: OAuthTokenRepository = {
             scopes: token.scopes.map((scope) => scope.name),
             refreshToken: token.refreshToken,
             refreshTokenExpiresAt: token.refreshTokenExpiresAt,
-            userId: token.user.id,
+            userId: token.user?.id,
             updatedAt: new Date(),
         };
 

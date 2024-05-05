@@ -76,6 +76,19 @@ await database.schema
     .execute();
 
 await database.schema
+    .createTable("client")
+    .ifNotExists()
+    .addColumn("clientId", "text", (col) => col.notNull().primaryKey())
+    .addColumn("clientSecret", "text")
+    .addColumn("redirectUris", "json", (col) => col.notNull())
+    .addColumn("scopes", "json", (col) => col.notNull())
+    .addColumn("allowedGrants", "json", (col) => col.notNull())
+    .addColumn("name", "text", (col) => col.notNull())
+    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
+    .execute();
+
+await database.schema
     .createTable("authCode")
     .ifNotExists()
     .addColumn("code", "text", (col) => col.notNull().primaryKey())
@@ -98,7 +111,7 @@ await database.schema
     .addColumn("refreshToken", "text", (col) => col.unique())
     .addColumn("refreshTokenExpiresAt", "datetime")
     .addColumn("clientId", "text", (col) => col.notNull())
-    .addColumn("userId", "varchar", (col) => col.notNull())
+    .addColumn("userId", "varchar")
     .addColumn("scopes", "json", (col) => col.notNull())
     .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))

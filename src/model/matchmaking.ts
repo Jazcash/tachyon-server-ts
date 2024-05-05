@@ -1,3 +1,5 @@
+import { UserClient } from "@/model/user-client.js";
+
 export type MatchmakingPlaylist = {
     id: string;
     name: string;
@@ -7,6 +9,6 @@ export type MatchmakingPlaylist = {
 };
 
 export type MatchmakingQueue = {
-    playlistId: string;
-    userIds: Set<string>;
+    playlist: MatchmakingPlaylist;
+    users: UserClient[];
 };

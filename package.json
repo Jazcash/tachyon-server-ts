@@ -2,7 +2,6 @@
   "name": "tachyon-server",
   "version": "0.1.0",
   "description": "Tachyon server written in TypeScript",
-  "main": "dist/index",
   "type": "module",
   "scripts": {
     "start": "npx tsx src/index.ts",
@@ -11,11 +10,8 @@
   },
   "author": "Jazcash",
   "license": "ISC",
-  "files": [
-    "dist"
-  ],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
     "@fastify/autoload": "^5.8.0",

@@ -2,6 +2,7 @@ import { DateInterval, generateRandomToken, OAuthAuthCode, OAuthAuthCodeReposito
 
 import { oauthClientRepository } from "@/auth/client-repository.js";
 import { database } from "@/database.js";
+import { isUserIdValid } from "@/utils/is-userId-string.js";
 
 export const oauthAuthCodeRepository: OAuthAuthCodeRepository = {
     async getByIdentifier(authCodeCode: string): Promise<OAuthAuthCode> {
@@ -26,7 +27,7 @@ export const oauthAuthCodeRepository: OAuthAuthCodeRepository = {
         };
     },
     async persist(authCode: OAuthAuthCode): Promise<void> {
-        if (typeof authCode.user?.id !== "string") {
+        if (!isUserIdValid(authCode.user?.id)) {
             throw new Error(`userId must be of type string, got ${typeof authCode.user?.id}`);
         }
 
@@ -37,7 +38,7 @@ export const oauthAuthCodeRepository: OAuthAuthCodeRepository = {
                 code: authCode.code,
                 expiresAt: authCode.expiresAt,
                 scopes: authCode.scopes.map((scope) => scope.name),
-                userId: authCode.user.id,
+                userId: authCode.user?.id,
                 codeChallenge: authCode.codeChallenge,
                 codeChallengeMethod: authCode.codeChallengeMethod,
                 redirectUri: authCode.redirectUri,

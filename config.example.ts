@@ -4,6 +4,7 @@ import { Config } from "./src/model/config.js";
 export default {
     hotLoadHandlers: true,
     port: 3005,
+    autohostPort: 3006,
     accountVerification: false,
     steamAppId: 480,
     steamWebApiKey: "looks_like_DCDF2512E051CC260AB22D3F13C536F7",

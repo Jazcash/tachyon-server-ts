@@ -44,13 +44,16 @@ export const fastify = Fastify({
     trustProxy: true,
     logger: {
         level: "warn",
-        file: "fastify.log",
+        file: "logs/fastify.log",
     },
 });
 
 fastify.setErrorHandler((err, req, reply) => {
     console.error(err);
-    reply.send(err);
+    if (err.statusCode) {
+        reply.status(err.statusCode);
+    }
+    reply.send(err.message ?? err.cause ?? err.name);
 });
 
 const hbs = handlebars.create();
@@ -64,7 +67,6 @@ await fastify.register(fastifyWebsocket, {
         handleProtocols: (protocols, request) => {
             return `tachyon-${tachyonMeta.version}`;
         },
-        //verifyClient: authorizeSocketConnection,
     },
 });
 await fastify.register(fastifyCookie, { secret: await getSignSecret() });

@@ -17,29 +17,46 @@ type JWTToken = {
     jti?: string;
 };
 
-export async function authorizeSession(req: FastifyRequest) {
+export async function authorizeUserSession(req: FastifyRequest) {
     try {
         if (!req.headers.authorization) {
             throw new Error("authorization_header_missing");
         }
 
         const [authKey, authValue] = req.headers.authorization.split(" ");
-
-        if (authKey === "Bearer" && authValue) {
-            const token = await getAccessToken(authValue);
-
-            const user = await userService.getUserById(token.userId);
-            if (!user) {
-                throw new Error("user_not_found");
-            }
-
-            req.session.user = user;
-        } else {
+        if (authKey !== "Bearer" || !authValue) {
             throw new Error("invalid_authorization_header");
         }
+
+        const token = await getAccessToken(authValue);
+        if (!token.scopes.includes("tachyon.lobby")) {
+            throw new Error("missing_scope: tachyon.lobby");
+        }
+        if (!token.userId) {
+            throw new Error("missing_user_id");
+        }
+
+        const user = await userService.getUserById(token.userId);
+        req.session.user = user;
     } catch (err) {
         req.session.user = undefined;
         throw err;
+    }
+}
+
+export async function authorizeAutohostSession(req: FastifyRequest) {
+    if (!req.headers.authorization) {
+        throw new Error("authorization_header_missing");
+    }
+
+    const [authKey, authValue] = req.headers.authorization.split(" ");
+    if (authKey !== "Bearer" || !authValue) {
+        throw new Error("invalid_authorization_header");
+    }
+
+    const token = await getAccessToken(authValue);
+    if (!token.scopes.includes("tachyon.autohost")) {
+        throw new Error("missing_scope: tachyon.autohost");
     }
 }
 

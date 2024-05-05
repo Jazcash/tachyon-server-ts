@@ -6,7 +6,7 @@ export type TokenTable = {
     refreshToken?: string | null;
     refreshTokenExpiresAt?: Date | null;
     clientId: string;
-    userId: string;
+    userId?: string;
     scopes: string[];
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;

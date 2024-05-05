@@ -28,7 +28,8 @@ oauth.enableGrantTypes(
         },
         new DateInterval("1h"),
     ],
-    ["refresh_token", new DateInterval("1h")]
+    ["refresh_token", new DateInterval("1h")],
+    ["client_credentials", new DateInterval("1h")]
 );
 
 oauth.enableGrantType({
