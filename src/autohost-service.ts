@@ -1,32 +1,44 @@
-import WebSocket from "ws";
+import { randomUUID } from "crypto";
 
-import { Autohost } from "@/model/autohost.js";
-import { AutohostClient, AutohostClientData } from "@/model/autohost-client.js";
-
-type AutohostId = Autohost["id"];
+import { database } from "@/database.js";
+import { AutohostRow, InsertableAutohostRow, UpdateableAutohostRow } from "@/model/db/autohost.js";
 
 export class AutohostService {
-    protected autohosts = new Map<AutohostId, AutohostClient>();
+    public async createAutohost(data: Omit<InsertableAutohostRow, "autohostId">) {
+        const autohostId = randomUUID();
 
-    public addAutohost(socket: WebSocket, data: AutohostClientData): AutohostClient {
-        const autohostClient = new AutohostClient(socket, data);
-        this.autohosts.set(autohostClient.autohostId, autohostClient);
-        return autohostClient;
+        return await database
+            .insertInto("autohost")
+            .values({
+                autohostId: autohostId,
+                ...data,
+            })
+            .returningAll()
+            .executeTakeFirstOrThrow();
     }
 
-    public slaveAutohost(autohost: AutohostClient) {
-        if (!this.autohosts.has(autohost.autohostId)) {
-            this.autohosts.set(autohost.autohostId, autohost);
-        } else {
-            console.warn(`Autohost has already been added: ${autohost.autohostId}`);
-        }
+    public async getAutohostById(autohostId: string) {
+        return database.selectFrom("autohost").where("autohostId", "=", autohostId).selectAll().executeTakeFirst();
     }
 
-    public unslaveAutohost(autohost: AutohostClient) {
-        if (this.autohosts.has(autohost.autohostId)) {
-            this.autohosts.delete(autohost.autohostId);
-        } else {
-            console.warn(`Autohost has already been removed: ${autohost.autohostId}`);
+    public async updateAutohost(autohostId: string, values: UpdateableAutohostRow) {
+        await database
+            .updateTable("autohost")
+            .where("autohostId", "=", autohostId)
+            .set({ ...values, updatedAt: new Date() })
+            .executeTakeFirstOrThrow();
+    }
+
+    public async updateAutohostProperty<K extends keyof UpdateableAutohostRow & string>(autohostId: string, property: K, value: AutohostRow[K]) {
+        try {
+            await database
+                .updateTable("autohost")
+                .where("autohostId", "=", autohostId)
+                .set({ [property]: value, updatedAt: new Date() })
+                .executeTakeFirstOrThrow();
+        } catch (err) {
+            console.error(`Error updating autohost row with autohostId ${autohostId}: ${property} = ${value}`);
+            console.error(err);
         }
     }
 }

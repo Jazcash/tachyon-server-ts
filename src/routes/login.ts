@@ -1,18 +1,18 @@
 import { FastifyPluginAsync } from "fastify";
 import SteamAuth from "node-steam-openid";
 
+import { unauthorizedRoute } from "@/auth/unauthorized-route.js";
 import { config } from "@/config.js";
 import { database } from "@/database.js";
 import { UserRow } from "@/model/db/user.js";
 import { userService } from "@/user-service.js";
-import { loggedOutOnly } from "@/utils/fastify-login-prevalidation.js";
 import { comparePassword } from "@/utils/hash-password.js";
 
 export const loginRoutes: FastifyPluginAsync = async function (fastify, options) {
     fastify.route({
         method: "GET",
         url: "/login",
-        preValidation: loggedOutOnly,
+        preValidation: unauthorizedRoute,
         handler: async (req, reply) => {
             return reply.view("login", {
                 csrfToken: reply.generateCsrf(),
@@ -23,7 +23,7 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
     fastify.route<{ Body: { usernameOrEmail: string; password: string } }>({
         method: "POST",
         url: "/login",
-        preValidation: loggedOutOnly,
+        preValidation: unauthorizedRoute,
         handler: async (req, reply) => {
             try {
                 const { usernameOrEmail, password } = req.body;

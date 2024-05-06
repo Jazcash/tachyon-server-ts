@@ -18,12 +18,13 @@ import { fileURLToPath } from "url";
 
 import { config } from "@/config.js";
 import { dbSessionStore } from "@/db-session-store.js";
+import { AutohostRow } from "@/model/db/autohost.js";
 import { UserRow } from "@/model/db/user.js";
 import { indexRoute } from "@/routes/index.js";
-import { loginRoutes } from "@/routes/login.js";
+import { loginRoutes as loginRoute } from "@/routes/login.js";
 import { logoutRoute } from "@/routes/logout.js";
 import { oauthRoutes } from "@/routes/oauth.js";
-import { registerRoutes } from "@/routes/register.js";
+import { registerRoutes as registerRoute } from "@/routes/register.js";
 import { getSignSecret } from "@/utils/get-sign-secret.js";
 
 declare module "fastify" {
@@ -35,6 +36,7 @@ declare module "fastify" {
         googleId?: string;
         steamId?: string;
         user?: UserRow;
+        autohost?: AutohostRow;
     }
 }
 
@@ -43,7 +45,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const fastify = Fastify({
     trustProxy: true,
     logger: {
-        level: "warn",
+        level: "trace",
         file: "logs/fastify.log",
     },
 });
@@ -101,11 +103,11 @@ fastify.register(fastifyOauth2, {
     },
 });
 
-await fastify.register(registerRoutes);
-await fastify.register(loginRoutes);
+await fastify.register(indexRoute);
+await fastify.register(registerRoute);
+await fastify.register(loginRoute);
 await fastify.register(logoutRoute);
 await fastify.register(oauthRoutes);
-await fastify.register(indexRoute);
 
 export async function startHttpServer() {
     try {

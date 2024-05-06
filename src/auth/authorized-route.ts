@@ -1,26 +1,24 @@
 import { OAuthException } from "@jmondi/oauth2-server";
-import { FastifyRequest } from "fastify";
+import { RouteShorthandOptions } from "fastify";
 
 import { jwtService } from "@/auth/oauth.js";
+import { autohostService } from "@/autohost-service.js";
 import { database } from "@/database.js";
 import { TokenRow } from "@/model/db/token.js";
+import { JWTToken } from "@/model/jwt-token.js";
 import { userService } from "@/user-service.js";
 
-type JWTToken = {
-    client_id?: string;
-    user_id?: string;
-    expires_at?: number;
-    scope?: string;
-    access_token_id?: string;
-    refresh_token_id?: string;
-    iat?: number;
-    jti?: string;
-};
+export const authorizedRoute: RouteShorthandOptions["preValidation"] = async (req, reply) => {
+    console.log("cooL");
 
-export async function authorizeUserSession(req: FastifyRequest) {
     try {
+        if (req.session.user) {
+            return;
+        }
+
         if (!req.headers.authorization) {
-            throw new Error("authorization_header_missing");
+            reply.redirect("/login");
+            return;
         }
 
         const [authKey, authValue] = req.headers.authorization.split(" ");
@@ -29,10 +27,19 @@ export async function authorizeUserSession(req: FastifyRequest) {
         }
 
         const token = await getAccessToken(authValue);
+
+        if (token.scopes.includes("tachyon.autohost")) {
+            const autohost = await autohostService.getAutohostById(token.autohostId);
+            return;
+        }
+
         if (!token.scopes.includes("tachyon.lobby")) {
+            reply.code(401);
             throw new Error("missing_scope: tachyon.lobby");
         }
+
         if (!token.userId) {
+            reply.code(401);
             throw new Error("missing_user_id");
         }
 
@@ -42,23 +49,7 @@ export async function authorizeUserSession(req: FastifyRequest) {
         req.session.user = undefined;
         throw err;
     }
-}
-
-export async function authorizeAutohostSession(req: FastifyRequest) {
-    if (!req.headers.authorization) {
-        throw new Error("authorization_header_missing");
-    }
-
-    const [authKey, authValue] = req.headers.authorization.split(" ");
-    if (authKey !== "Bearer" || !authValue) {
-        throw new Error("invalid_authorization_header");
-    }
-
-    const token = await getAccessToken(authValue);
-    if (!token.scopes.includes("tachyon.autohost")) {
-        throw new Error("missing_scope: tachyon.autohost");
-    }
-}
+};
 
 export async function getAccessToken(encodedToken: string): Promise<TokenRow> {
     if (!encodedToken) {
@@ -69,9 +60,12 @@ export async function getAccessToken(encodedToken: string): Promise<TokenRow> {
 
     try {
         decodedToken = jwtService.decode(encodedToken) as JWTToken;
+        if (!decodedToken || typeof decodedToken !== "object") {
+            throw new Error(`couldn't decode token: ${encodedToken}`);
+        }
     } catch (err) {
         console.error(err);
-        throw OAuthException.badRequest("error_decoding_token");
+        throw OAuthException.badRequest("invalid_token");
     }
 
     if (decodedToken.refresh_token_id) {

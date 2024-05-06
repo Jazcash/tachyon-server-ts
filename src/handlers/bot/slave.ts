@@ -1,10 +1,10 @@
 import { randomUUID } from "crypto";
 
-import { autohostService } from "@/autohost-service.js";
+import { autohostClientService } from "@/autohost-client-service.js";
 import { HandlerService } from "@/handler-service.js";
 
 export default HandlerService.defineHandler("autohost", "slave", async ({ client }) => {
-    autohostService.slaveAutohost({
+    autohostClientService.slaveAutohostClient({
         autohostId: randomUUID(),
         ip: client.ipAddress,
         region: "TODO",

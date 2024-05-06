@@ -1,8 +1,8 @@
 import { Generated, Insertable, Selectable, Updateable } from "kysely";
 
 export type AutohostTable = {
+    autohostId: string;
     clientId: string;
-    clientSecret: string;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;
 };
