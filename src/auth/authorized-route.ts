@@ -1,16 +1,14 @@
 import { OAuthException } from "@jmondi/oauth2-server";
 import { RouteShorthandOptions } from "fastify";
 
+import { oauthClientRepository } from "@/auth/client-repository.js";
 import { jwtService } from "@/auth/oauth.js";
-import { autohostService } from "@/autohost-service.js";
 import { database } from "@/database.js";
 import { TokenRow } from "@/model/db/token.js";
 import { JWTToken } from "@/model/jwt-token.js";
 import { userService } from "@/user-service.js";
 
 export const authorizedRoute: RouteShorthandOptions["preValidation"] = async (req, reply) => {
-    console.log("cooL");
-
     try {
         if (req.session.user) {
             return;
@@ -29,7 +27,11 @@ export const authorizedRoute: RouteShorthandOptions["preValidation"] = async (re
         const token = await getAccessToken(authValue);
 
         if (token.scopes.includes("tachyon.autohost")) {
-            const autohost = await autohostService.getAutohostById(token.autohostId);
+            const client = await oauthClientRepository.getByIdentifier(token.clientId);
+            if (!client.scopes.some((scope) => scope.name === "tachyon.autohost")) {
+                reply.code(401);
+                throw new Error("invalid_client_scope");
+            }
             return;
         }
 
@@ -44,6 +46,11 @@ export const authorizedRoute: RouteShorthandOptions["preValidation"] = async (re
         }
 
         const user = await userService.getUserById(token.userId);
+        if (!user) {
+            reply.code(401);
+            throw new Error("user_not_found");
+        }
+
         req.session.user = user;
     } catch (err) {
         req.session.user = undefined;

@@ -76,15 +76,6 @@ await database.schema
     .execute();
 
 await database.schema
-    .createTable("autohost")
-    .ifNotExists()
-    .addColumn("autohostId", "text", (col) => col.notNull().primaryKey())
-    .addColumn("clientId", "text", (col) => col.notNull().references("client.clientId"))
-    .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
-    .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
-    .execute();
-
-await database.schema
     .createTable("client")
     .ifNotExists()
     .addColumn("clientId", "text", (col) => col.notNull().primaryKey())

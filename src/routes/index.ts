@@ -1,6 +1,8 @@
+import { randomUUID } from "crypto";
 import { FastifyPluginAsync } from "fastify";
 
 import { authorizedRoute } from "@/auth/authorized-route.js";
+import { autohostClientService } from "@/autohost-client-service.js";
 import { userClientService } from "@/user-client-service.js";
 
 export const indexRoute: FastifyPluginAsync = async function (fastify, options) {
@@ -15,8 +17,10 @@ export const indexRoute: FastifyPluginAsync = async function (fastify, options) 
                     ipAddress: req.ip,
                 });
             } else {
-                console.error("no user");
-                //throw new Error("no user");
+                autohostClientService.addAutohostClient(ws, {
+                    autohostId: randomUUID(),
+                    ipAddress: req.ip,
+                });
             }
         },
         handler: async (req, reply) => {

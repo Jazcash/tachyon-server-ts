@@ -4,11 +4,12 @@ import { Kysely } from "kysely";
 import type { EndpointId, RequestData, ResponseData, ServiceId } from "tachyon-protocol";
 
 import { config } from "@/config.js";
+import { AutohostClient } from "@/model/autohost-client.js";
 import { DatabaseModel } from "@/model/db/database.js";
 import { UserClient } from "@/model/user-client.js";
 
 type HandlerArgs<S extends ServiceId, E extends EndpointId<S>> = {
-    client: UserClient;
+    client: S extends "autohost" ? AutohostClient : UserClient;
     database: Kysely<DatabaseModel>;
     data: RequestData<S, E>;
 };

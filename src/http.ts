@@ -18,7 +18,6 @@ import { fileURLToPath } from "url";
 
 import { config } from "@/config.js";
 import { dbSessionStore } from "@/db-session-store.js";
-import { AutohostRow } from "@/model/db/autohost.js";
 import { UserRow } from "@/model/db/user.js";
 import { indexRoute } from "@/routes/index.js";
 import { loginRoutes as loginRoute } from "@/routes/login.js";
@@ -36,7 +35,6 @@ declare module "fastify" {
         googleId?: string;
         steamId?: string;
         user?: UserRow;
-        autohost?: AutohostRow;
     }
 }
 

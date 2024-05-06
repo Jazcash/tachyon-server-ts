@@ -44,5 +44,5 @@ thumbs.db
 debug.log
 database.db
 config.json
-config.ts
+/config.ts
 fastify.log

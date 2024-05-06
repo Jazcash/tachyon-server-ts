@@ -14,6 +14,12 @@ export class AutohostClient extends AbstractClient implements AutohostClientData
         super(socket);
 
         this.data = data;
+
+        this.sendResponse({
+            commandId: "autohost/connected/response",
+            messageId: "0",
+            status: "success",
+        });
     }
 
     public get autohostId() {

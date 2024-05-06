@@ -9,7 +9,7 @@ export class UserClientService {
     public addUserClient(socket: WebSocket, userData: UserClientData): UserClient {
         const existingUser = this.userClients.get(userData.userId);
         if (existingUser) {
-            return existingUser;
+            throw new Error(`User already connected: ${userData.userId}`);
         }
 
         const userClient = new UserClient(socket, userData);

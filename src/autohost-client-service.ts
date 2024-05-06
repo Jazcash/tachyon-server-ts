@@ -7,27 +7,32 @@ type AutohostId = Autohost["id"];
 
 export class AutohostClientService {
     protected autohostClients = new Map<AutohostId, AutohostClient>();
+    protected slavePool = new Set<AutohostClient>();
 
     public addAutohostClient(socket: WebSocket, data: AutohostClientData): AutohostClient {
+        const existingAutohost = this.autohostClients.get(data.autohostId);
+        if (existingAutohost) {
+            throw new Error(`Autohost already connected: ${data.autohostId}`);
+        }
+
         const autohostClient = new AutohostClient(socket, data);
+
         this.autohostClients.set(autohostClient.autohostId, autohostClient);
+
+        socket.addEventListener("close", () => {
+            this.autohostClients.delete(data.autohostId);
+            this.unslaveAutohostClient(autohostClient);
+        });
+
         return autohostClient;
     }
 
     public slaveAutohostClient(autohost: AutohostClient) {
-        if (!this.autohostClients.has(autohost.autohostId)) {
-            this.autohostClients.set(autohost.autohostId, autohost);
-        } else {
-            console.warn(`Autohost has already been added: ${autohost.autohostId}`);
-        }
+        this.slavePool.add(autohost);
     }
 
     public unslaveAutohostClient(autohost: AutohostClient) {
-        if (this.autohostClients.has(autohost.autohostId)) {
-            this.autohostClients.delete(autohost.autohostId);
-        } else {
-            console.warn(`Autohost has already been removed: ${autohost.autohostId}`);
-        }
+        this.slavePool.delete(autohost);
     }
 }
 
