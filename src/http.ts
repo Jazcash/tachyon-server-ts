@@ -95,7 +95,7 @@ fastify.register(fastifyOauth2, {
         },
     },
     startRedirectPath: "/login/google",
-    callbackUri: "http://127.0.0.1:3005/login/google/callback",
+    callbackUri: `http://${config.host}:${config.port}/login/google/callback`,
     discovery: {
         issuer: "https://accounts.google.com",
     },
@@ -109,7 +109,7 @@ await fastify.register(oauthRoutes);
 
 export async function startHttpServer() {
     try {
-        await fastify.listen({ port: config.port });
+        await fastify.listen({ host: config.host, port: config.port });
         console.log(chalk.green(`Tachyon Server listening on ${fastify.listeningOrigin}, serving Tachyon v${tachyonMeta.version}`));
     } catch (err) {
         fastify.log.error(err);

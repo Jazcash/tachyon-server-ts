@@ -100,8 +100,8 @@ export const loginRoutes: FastifyPluginAsync = async function (fastify, options)
 
     const steam = new SteamAuth({
         apiKey: config.steamWebApiKey,
-        realm: "http://localhost:3005/",
-        returnUrl: "http://localhost:3005/login/steam/callback",
+        realm: `http://${config.host}:${config.port}/`,
+        returnUrl: `http://${config.host}:${config.port}/login/steam/callback`,
     });
 
     fastify.route({
