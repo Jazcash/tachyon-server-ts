@@ -5,7 +5,6 @@ export type Config = {
     hotLoadHandlers?: boolean;
     host?: string;
     port?: number;
-    autohostPort?: number;
     accountVerification?: boolean;
     mail?: {
         port: number;
