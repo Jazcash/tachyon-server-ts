@@ -46,3 +46,4 @@ database.db
 config.json
 /config.ts
 fastify.log
+*.log
