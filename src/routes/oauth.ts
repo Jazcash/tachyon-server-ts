@@ -1,3 +1,4 @@
+import { OAuthException } from "@jmondi/oauth2-server";
 import { handleFastifyError, handleFastifyReply, requestFromFastify } from "@jmondi/oauth2-server/fastify";
 import { FastifyPluginAsync } from "fastify";
 
@@ -90,7 +91,15 @@ export const oauthRoutes: FastifyPluginAsync = async function (fastify, options)
                 handleFastifyReply(reply, oauthResponse);
                 return reply;
             } catch (err) {
-                handleFastifyError(err, reply);
+                if (err instanceof OAuthException) {
+                    reply.status(err.status).send({
+                        status: err.status,
+                        message: err.message,
+                    });
+                    return reply;
+                } else {
+                    throw err;
+                }
             }
         },
     });

@@ -16,24 +16,25 @@ export class UserClient extends AbstractClient implements UserRow {
 
         this.data = data;
 
-        this.sendResponse({
-            commandId: "system/connected/response",
-            messageId: "0",
-            status: "success",
+        this.sendEvent({
+            commandId: "user/updated",
             data: {
-                userId: this.data.userId,
-                username: this.data.username,
-                displayName: this.data.displayName,
-                friendIds: this.data.friendIds,
-                ignoreIds: this.data.ignoreIds,
-                clanId: this.data.clanId ?? null,
-                roles: this.data.roles,
-                avatarUrl: "",
-                battleStatus: null,
-                incomingFriendRequestIds: this.data.incomingFriendRequestIds,
-                outgoingFriendRequestIds: this.data.outgoingFriendRequestIds,
-                partyId: null,
-                status: "lobby",
+                users: [
+                    {
+                        userId: this.data.userId,
+                        username: this.data.username,
+                        displayName: this.data.displayName,
+                        friendIds: this.data.friendIds,
+                        ignoreIds: this.data.ignoreIds,
+                        clanId: this.data.clanId ?? null,
+                        scopes: this.data.scopes,
+                        battleStatus: null,
+                        incomingFriendRequestIds: this.data.incomingFriendRequestIds,
+                        outgoingFriendRequestIds: this.data.outgoingFriendRequestIds,
+                        partyId: null,
+                        status: "lobby",
+                    },
+                ],
             },
         });
     }
@@ -97,8 +98,8 @@ export class UserClient extends AbstractClient implements UserRow {
         return this.data.clanId;
     }
 
-    public get roles() {
-        return this.data.roles;
+    public get scopes() {
+        return this.data.scopes;
     }
 
     public get createdAt() {

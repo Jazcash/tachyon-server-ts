@@ -11,16 +11,22 @@ export const indexRoute: FastifyPluginAsync = async function (fastify, options) 
         method: "get",
         preValidation: authorizedRoute,
         wsHandler: async (ws, req) => {
-            if (req.session.user) {
-                userClientService.addUserClient(ws, {
-                    ...req.session.user,
-                    ipAddress: req.ip,
-                });
-            } else {
-                autohostClientService.addAutohostClient(ws, {
-                    autohostId: randomUUID(),
-                    ipAddress: req.ip,
-                });
+            try {
+                if (req.session.user) {
+                    userClientService.addUserClient(ws, {
+                        ...req.session.user,
+                        ipAddress: req.ip,
+                    });
+                } else {
+                    autohostClientService.addAutohostClient(ws, {
+                        autohostId: randomUUID(),
+                        ipAddress: req.ip,
+                    });
+                }
+            } catch (err) {
+                if (err instanceof Error) {
+                    ws.close(4000, err.message);
+                }
             }
         },
         handler: async (req, reply) => {

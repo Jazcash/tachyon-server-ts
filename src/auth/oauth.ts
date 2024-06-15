@@ -43,7 +43,7 @@ oauth.enableGrantType({
             const user = await userService.getUserBySteamId(steamTicketValidationResponse.steamId);
 
             if (!user) {
-                throw new Error("user_not_found");
+                throw OAuthException.accessDenied("user_not_found");
             }
 
             return { id: user.userId };

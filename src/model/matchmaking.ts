@@ -1,7 +1,9 @@
 import { UserClient } from "@/model/user-client.js";
 
+export type PlaylistId = string;
+
 export type MatchmakingPlaylist = {
-    id: string;
+    id: PlaylistId;
     name: string;
     numOfTeams: number;
     teamSize: number;
@@ -11,4 +13,13 @@ export type MatchmakingPlaylist = {
 export type MatchmakingQueue = {
     playlist: MatchmakingPlaylist;
     users: UserClient[];
+};
+
+export type MatchId = string;
+
+export type Match = {
+    matchId: MatchId;
+    playlistId: string;
+    users: UserClient[];
+    readyUsers: Set<UserClient>;
 };

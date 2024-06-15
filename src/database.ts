@@ -3,7 +3,7 @@ import { Kysely, SqliteDialect } from "kysely";
 import { SerializePlugin } from "kysely-plugin-serialize";
 
 import { DatabaseModel } from "@/model/db/database.js";
-import { hashPassword } from "@/utils/hash-password.js";
+import { generateDummyData } from "@/utils/generate-dummy-data.js";
 
 export const database = new Kysely<DatabaseModel>({
     dialect: new SqliteDialect({
@@ -70,7 +70,7 @@ await database.schema
     .addColumn("outgoingFriendRequestIds", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("incomingFriendRequestIds", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("ignoreIds", "json", (col) => col.notNull().defaultTo("[]"))
-    .addColumn("roles", "json", (col) => col.notNull().defaultTo("[]"))
+    .addColumn("scopes", "json", (col) => col.notNull().defaultTo("[]"))
     .addColumn("createdAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .addColumn("updatedAt", "datetime", (col) => col.notNull().defaultTo(new Date()))
     .execute();
@@ -127,14 +127,4 @@ await database.schema
     .addColumn("auth", "json")
     .execute();
 
-await database
-    .insertInto("user")
-    .values({
-        userId: "123",
-        email: "test@tachyontest.com",
-        username: "dummy",
-        hashedPassword: await hashPassword("fish"),
-        displayName: "Dummy User",
-    })
-    .onConflict((oc) => oc.doNothing())
-    .execute();
+generateDummyData();

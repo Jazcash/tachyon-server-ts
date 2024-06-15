@@ -48,7 +48,7 @@ export const authorizedRoute: RouteShorthandOptions["preValidation"] = async (re
         const user = await userService.getUserById(token.userId);
         if (!user) {
             reply.code(401);
-            throw new Error("user_not_found");
+            throw OAuthException.accessDenied("user_not_found");
         }
 
         req.session.user = user;

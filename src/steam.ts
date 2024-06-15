@@ -10,7 +10,7 @@ export async function authenticateSteamTicket(ticket: string): Promise<{ steamId
     }
 
     const query = new URLSearchParams({
-        appid: config.steamAppId,
+        appid: config.steamAppId.toString(),
         key: config.steamWebApiKey,
         ticket,
     }).toString();

@@ -1,7 +1,9 @@
 import { Generated, Insertable, Selectable, Updateable } from "kysely";
 
+export type UserId = string;
+
 export type UserTable = {
-    userId: string;
+    userId: UserId;
     username: string;
     email?: string;
     hashedPassword?: string;
@@ -13,7 +15,7 @@ export type UserTable = {
     outgoingFriendRequestIds: Generated<string[]>;
     incomingFriendRequestIds: Generated<string[]>;
     ignoreIds: Generated<string[]>;
-    roles: Generated<string[]>;
+    scopes: Generated<string[]>;
     clanId?: string;
     createdAt: Generated<Date>;
     updatedAt: Generated<Date>;

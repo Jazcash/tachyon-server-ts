@@ -16,6 +16,7 @@ export type Config = {
         };
         from: string;
     };
+    logging?: boolean;
     steamAppId: number;
     steamWebApiKey: string;
     googleClientId: string;

@@ -1,132 +1,146 @@
-import chalk from "chalk";
-import { EndpointId, GenericResponseCommand, ResponseType, ServiceId, tachyonMeta } from "tachyon-protocol";
+import { Signal } from "jaz-ts-utils";
+import { GetCommands, TachyonCommand, TachyonEvent, TachyonRequest, TachyonResponse } from "tachyon-protocol";
 import * as validators from "tachyon-protocol/validators";
-import { Data, WebSocket } from "ws";
+import type { Except } from "type-fest";
+import { MessageEvent, WebSocket } from "ws";
 
+import { config } from "@/config.js";
+import { database } from "@/database.js";
 import { handlerService } from "@/handler-service.js";
-import { ResponseError } from "@/model/response-error.js";
 
 export abstract class AbstractClient {
     public socket: WebSocket;
 
+    protected responseHandlers: Map<string, Signal<TachyonResponse>> = new Map();
+    protected eventHandlers: Map<string, Signal<TachyonEvent>> = new Map();
+
     constructor(socket: WebSocket) {
         this.socket = socket;
 
-        this.socket.on("message", (data) => this.handleRequest(data));
+        this.socket.addEventListener("message", (message) => {
+            try {
+                this.handleMessage(message);
+            } catch (err) {
+                console.error(`Error handling message: ${err}`);
+                console.error(message.data.toString());
+            }
+        });
     }
 
-    public sendResponse(responseCommand: ResponseType): void {
-        const [serviceId, endpointId, commandType] = responseCommand.commandId.split("/");
+    public sendEvent(eventData: Except<TachyonEvent, "type" | "messageId">) {
+        if (!this.socket) {
+            throw new Error("Not connected to server");
+        }
 
-        const validatorId = `${serviceId}_${endpointId}_${commandType}`;
-        const validator = validators[validatorId as keyof typeof validators];
+        const command = {
+            type: "event",
+            messageId: "0",
+            ...eventData,
+        } as TachyonEvent;
 
-        if (!validator) {
-            console.error(`No response schema or validator found for ${serviceId}/${endpointId}`);
+        this.validateCommand(command);
+
+        this.socket.send(JSON.stringify(command));
+        this.log("OUTGOING EVENT", command);
+    }
+
+    protected handleMessage(message: MessageEvent) {
+        const obj = JSON.parse(message.data.toString());
+
+        if (!this.isCommand(obj)) {
+            throw new Error(`Message does not match expected command structure`);
+        }
+
+        this.validateCommand(obj);
+
+        if (obj.type === "request") {
+            this.handleRequest(obj);
+        } else if (obj.type === "response") {
+            this.handleResponse(obj);
+        } else if (obj.type === "event") {
+            this.handleEvent(obj);
+        } else {
+            throw new Error(`Unknown command type: ${obj.type}`);
+        }
+    }
+
+    protected async handleRequest(command: TachyonRequest) {
+        this.log("INCOMING REQUEST", command);
+
+        const handler = await handlerService.getHandler(command.commandId);
+
+        if (!handler) {
+            const response: TachyonResponse = {
+                type: "response",
+                commandId: command.commandId,
+                messageId: command.messageId,
+                status: "failed",
+                reason: "command_unimplemented",
+            };
+            this.validateCommand(response);
+
+            this.socket.send(JSON.stringify(response));
             return;
         }
 
-        const isValid = validator(responseCommand);
+        // @ts-ignore
+        const responseContent = (await handler.requestHandler({ client: this, database, data: command.data })) as Omit<
+            TachyonResponse,
+            "commandId" | "messageId" | "type"
+        >;
+
+        const response = {
+            type: "response",
+            commandId: command.commandId,
+            messageId: command.messageId,
+            ...responseContent,
+        } as TachyonResponse;
+
+        this.validateCommand(response);
+
+        this.log("OUTGOING RESPONSE", response);
+        this.socket?.send(JSON.stringify(response));
+    }
+
+    protected async handleResponse(command: TachyonResponse) {
+        const signal = this.responseHandlers.get(command.commandId);
+        if (signal) {
+            signal.dispatch(command as GetCommands<"user" | "autohost", "server", "response">);
+        }
+    }
+
+    protected async handleEvent(command: TachyonEvent) {
+        const signal = this.eventHandlers.get(command.commandId);
+        if (signal) {
+            signal.dispatch(command);
+        }
+    }
+
+    protected validateCommand(command: TachyonCommand) {
+        const commandId = command.commandId;
+        const validatorId = `${commandId}/${command.type}`.replaceAll("/", "_") as keyof typeof validators;
+        const validator = validators[validatorId];
+
+        if (!validator) {
+            console.error(`No validator found with id: ${validatorId}`);
+            throw new Error(`command_validation_failed`);
+        }
+
+        const isValid = validator(command);
         if (!isValid) {
-            console.error("Response validation failed");
+            console.error(`Command validation failed for ${commandId}`);
             console.error(validator.errors);
-            throw new Error(`Response validation failed for ${serviceId}/${endpointId}`);
-        }
-
-        this.socket.send(JSON.stringify(responseCommand));
-    }
-
-    protected async handleRequest(message: Data): Promise<void> {
-        const jsonStr = message.toString();
-
-        try {
-            const request = JSON.parse(jsonStr) as { commandId: `${string}/${string}/request`; messageId: string; data?: object };
-            const [serviceId, endpointId] = request.commandId.split("/", 2);
-
-            if (!this.isValidServiceId(serviceId)) {
-                throw new Error(`Invalid ServiceId: ${serviceId}`);
-            }
-
-            if (!this.isValidEndpointId(serviceId, endpointId)) {
-                throw new Error(`Invalid EndpointId: ${endpointId}`);
-            }
-
-            const response: any = {
-                commandId: `${serviceId}/${endpointId}/response`,
-                messageId: request.messageId,
-            };
-
-            const handler = await handlerService.getHandler(serviceId, endpointId as EndpointId<typeof serviceId>);
-
-            if (!handler) {
-                response.status = "failed";
-                response.reason = "command_unimplemented";
-
-                this.sendResponse(response);
-                return;
-            }
-
-            const validator = validators[`${serviceId}_${endpointId}_request` as keyof typeof validators];
-
-            if (!validator) {
-                throw new Error(`No request validator found for command: ${request.commandId}`);
-            }
-
-            const isValid = validator(request);
-            if (!isValid) {
-                console.error(`Request command validation failed for ${serviceId}/${endpointId}:`);
-                console.error(validator.errors);
-
-                response.status = "failed";
-                response.reason = "invalid_request";
-
-                this.sendResponse(response);
-                return;
-            }
-
-            try {
-                // @ts-ignore
-                const responseData = (await handler.requestHandler({ client: this, database, data: request.data })) as Omit<
-                    GenericResponseCommand,
-                    "commandId" | "messageId"
-                >;
-
-                if (responseData) {
-                    Object.assign(response, responseData);
-                }
-            } catch (err) {
-                if (err instanceof ResponseError) {
-                    Object.assign(response, {
-                        status: "failed",
-                        reason: err.reason,
-                    });
-                } else {
-                    console.error(chalk.redBright(`Uncaught error in handler for ${serviceId}/${endpointId}:`));
-                    console.error(chalk.red(err));
-                    Object.assign(response, {
-                        status: "failed",
-                        reason: "internal_error",
-                    });
-                }
-            }
-
-            this.sendResponse(response);
-
-            if (handler.postHandler) {
-                // @ts-ignore
-                await handler.postHandler({ client: this, database, data: request.data });
-            }
-        } catch (err) {
-            console.error(`received message:`, jsonStr);
-            console.error(`Error parsing request`, err);
+            throw new Error(`command_validation_failed`);
         }
     }
 
-    protected isValidServiceId(serviceId: string): serviceId is ServiceId {
-        return serviceId in tachyonMeta.ids;
+    protected isCommand(obj: unknown): obj is TachyonCommand {
+        return typeof obj === "object" && obj !== null && "commandId" in obj && "messageId" in obj && "type" in obj;
     }
 
-    protected isValidEndpointId(serviceId: ServiceId, endpointId: string): boolean {
-        return endpointId in tachyonMeta.ids[serviceId];
+    protected log(...args: Parameters<typeof console.log>) {
+        if (config.logging) {
+            console.log(...args);
+        }
     }
 }
