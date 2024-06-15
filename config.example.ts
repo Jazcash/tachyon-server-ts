@@ -3,7 +3,7 @@ import { Config } from "./src/model/config.js";
 
 export default {
     hotLoadHandlers: true,
-    host: "0.0.0.0",
+    host: "127.0.0.1",
     port: 3005,
     accountVerification: false,
     steamAppId: 480,
