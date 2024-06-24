@@ -17,7 +17,7 @@ export class UserClientService {
         this.userClients.set(userClient.userId, userClient);
 
         socket.addEventListener("close", () => {
-            matchmakingService.removeUsersFromAllQueues(userClient.userId);
+            matchmakingService.removeUsersFromAllQueues(userClient);
             this.userClients.delete(userClient.userId);
         });
 

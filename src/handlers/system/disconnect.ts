@@ -1,8 +1,7 @@
 import { HandlerService } from "@/handler-service.js";
 
 export default HandlerService.defineHandler(
-    "system",
-    "disconnect",
+    "system/disconnect",
     async () => {
         return {
             status: "success",

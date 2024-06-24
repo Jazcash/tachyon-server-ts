@@ -17,7 +17,7 @@ export class UserClient extends AbstractClient implements UserRow {
         this.data = data;
 
         this.sendEvent({
-            commandId: "user/updated",
+            commandId: "user/add",
             data: {
                 users: [
                     {
@@ -126,6 +126,17 @@ export class UserClient extends AbstractClient implements UserRow {
     }
 
     public async addOutgoingFriendRequest(userId: string) {
-        //
+        if (!this.data.outgoingFriendRequestIds.includes(userId)) {
+            this.data.outgoingFriendRequestIds.push(userId);
+            await userService.updateUserProperty(this.data.userId, "outgoingFriendRequestIds", this.data.outgoingFriendRequestIds);
+        }
+    }
+
+    public async removeOutgoingFriendRequest(userId: string) {
+        const index = this.data.outgoingFriendRequestIds.indexOf(userId);
+        if (index > -1) {
+            this.data.outgoingFriendRequestIds.splice(index, 1);
+            await userService.updateUserProperty(this.data.userId, "outgoingFriendRequestIds", this.data.outgoingFriendRequestIds);
+        }
     }
 }

@@ -1,5 +1,5 @@
 module.exports = {
-    extends: ["./node_modules/jaz-ts-utils/.eslintrc.js", "plugin:require-extensions/recommended"],
+    extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:require-extensions/recommended"],
     env: {
         node: true,
         browser: false,
